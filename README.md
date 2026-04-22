@@ -44,11 +44,19 @@ Score  < 0.35 →  Baixo
 
 ## Arquitetura do Sistema
 
-O diagrama abaixo ilustra os três fluxos principais de comunicação entre os componentes: importação assíncrona dos dados do INPE via Celery, execução do algoritmo TOPSIS Fuzzy e visualização dos resultados em GeoJSON pelo frontend Vue 3 + Leaflet.
+### Visão de componentes — o que existe e como se conecta
+
+Diagrama no estilo **C4 Container** mostrando os cinco containers internos do sistema, os dois atores externos e os relacionamentos entre eles.
+
+![Diagrama de Componentes C4 — IgnisGeo](diagrama-componentes-c4.svg)
+
+### Visão de sequência — o que acontece e quando
+
+Os três fluxos principais de comunicação em tempo de execução: importação assíncrona dos dados do INPE via Celery, execução do TOPSIS Fuzzy e visualização dos resultados em GeoJSON pelo Leaflet.
 
 ![Diagrama de Sequência — IgnisGeo](diagrama-sequencia-queimadas.svg)
 
-> **Legenda:** setas sólidas = requisição síncrona · setas tracejadas = retorno/resposta · loop fechado = processamento interno
+> Os dois diagramas são complementares: o de componentes documenta a **estrutura estática** do sistema; o de sequência documenta o **comportamento dinâmico** em cada fluxo de uso.
 
 ---
 
@@ -185,7 +193,6 @@ Cada registro contém: latitude, longitude, data/hora (GMT), satélite, municíp
 - DJANGO SOFTWARE FOUNDATION. **Django documentation**. Disponível em: https://docs.djangoproject.com/
 
 ---
-
 
 ## Licença
 
