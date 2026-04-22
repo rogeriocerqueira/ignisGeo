@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IgnisGeo — Diagrama de Classes</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f9fafb;
+      margin: 0;
+      padding: 2rem;
+    }
+    h1 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #111827;
+      margin-bottom: 4px;
+    }
+    p {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 2rem;
+    }
+    #diagram {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 2rem;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>IgnisGeo — Diagrama de Classes</h1>
+  <p>Models Django · Serializers DRF · Domínio TOPSIS Fuzzy</p>
+  <div id="diagram"></div>
+
+  <script type="module">
+    import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'base',
+      themeVariables: {
+        fontSize: '13px',
+        fontFamily: 'sans-serif',
+        primaryColor: '#E6F1FB',
+        primaryBorderColor: '#185FA5',
+        primaryTextColor: '#0C447C',
+        secondaryColor: '#E1F5EE',
+        tertiaryColor: '#FAEEDA',
+        lineColor: '#6b7280',
+      },
+    });
+
+    const diagrama = `
+classDiagram
+    direction LR
+
+    class FocoQueimada {
+        <<Model · GeoDjango>>
+        +PointField localizacao
+        +DateTimeField data_hora
+        +CharField municipio
+        +CharField estado
+        +CharField bioma
+        +FloatField frp
+        +FloatField risco_historico
+        +FloatField vento_ms
+        +FloatField ndvi
+        +CharField satelite
+        +DateTimeField criado_em
+        +latitude() float
+        +longitude() float
+        +__str__() str
+    }
+
+    class AreaRisco {
+        <<Model · GeoDjango>>
+        +CharField nome
+        +CharField estado
+        +CharField bioma
+        +MultiPolygonField geometria
+        +FloatField score_topsis
+        +PositiveIntegerField ranking
+        +CharField nivel_risco
+        +IntegerField total_focos
+        +FloatField frp_media
+        +FloatField risco_historico_medio
+        +FloatField vento_medio
+        +FloatField ndvi_medio
+        +DateField periodo_inicio
+        +DateField periodo_fim
+        +DateTimeField atualizado_em
+        +__str__() str
+    }
+
+    class NumeroFuzzy {
+        <<dataclass · TOPSIS>>
+        +float a
+        +float b
+        +float c
+        +distancia(outro: NumeroFuzzy) float
+    }
+
+    class FocoQueimadaGeoSerializer {
+        <<GeoFeatureModelSerializer>>
+        +geo_field = localizacao
+    }
+
+    class FocoQueimadaListSerializer {
+        <<ModelSerializer>>
+        +FloatField latitude
+        +FloatField longitude
+    }
+
+    class AreaRiscoGeoSerializer {
+        <<GeoFeatureModelSerializer>>
+        +geo_field = geometria
+        +CharField nivel_risco_display
+    }
+
+    class AreaRiscoRankingSerializer {
+        <<ModelSerializer>>
+        +CharField nivel_risco_display
+    }
+
+    FocoQueimadaGeoSerializer ..> FocoQueimada : serializa
+    FocoQueimadaListSerializer ..> FocoQueimada : serializa
+    AreaRiscoGeoSerializer ..> AreaRisco : serializa
+    AreaRiscoRankingSerializer ..> AreaRisco : serializa
+    AreaRisco ..> NumeroFuzzy : calcula via TOPSIS
+`;
+
+    const { svg } = await mermaid.render('class-svg', diagrama);
+    document.getElementById('diagram').innerHTML = svg;
+  </script>
+</body>
+</html>
