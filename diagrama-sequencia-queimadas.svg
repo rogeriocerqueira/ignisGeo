@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 680 640" role="img">
+  <title>Diagrama de sequência — Monitor de Queimadas</title>
+  <desc>Três fluxos: importação CSV do INPE via Celery, cálculo TOPSIS Fuzzy e visualização GeoJSON no Leaflet</desc>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <!-- ── Participantes ── -->
+  <!-- Frontend -->
+  <rect x="20" y="16" width="110" height="40" rx="6" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+  <text font-family="sans-serif" font-size="13" font-weight="600" fill="#0C447C" x="75" y="33" text-anchor="middle">Frontend</text>
+  <text font-family="sans-serif" font-size="11" fill="#185FA5" x="75" y="50" text-anchor="middle">Vue 3 + Leaflet</text>
+
+  <!-- API Django -->
+  <rect x="178" y="16" width="110" height="40" rx="6" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+  <text font-family="sans-serif" font-size="13" font-weight="600" fill="#085041" x="233" y="33" text-anchor="middle">API Django</text>
+  <text font-family="sans-serif" font-size="11" fill="#0F6E56" x="233" y="50" text-anchor="middle">DRF + GeoDjango</text>
+
+  <!-- Celery -->
+  <rect x="336" y="16" width="110" height="40" rx="6" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+  <text font-family="sans-serif" font-size="13" font-weight="600" fill="#633806" x="391" y="33" text-anchor="middle">Celery Worker</text>
+  <text font-family="sans-serif" font-size="11" fill="#854F0B" x="391" y="50" text-anchor="middle">Redis broker</text>
+
+  <!-- PostGIS -->
+  <rect x="494" y="16" width="110" height="40" rx="6" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+  <text font-family="sans-serif" font-size="13" font-weight="600" fill="#3C3489" x="549" y="33" text-anchor="middle">PostGIS</text>
+  <text font-family="sans-serif" font-size="11" fill="#534AB7" x="549" y="50" text-anchor="middle">PostgreSQL + geo</text>
+
+  <!-- ── Lifelines ── -->
+  <line x1="75"  y1="56" x2="75"  y2="618" stroke="#85B7EB" stroke-width="1" stroke-dasharray="4 3"/>
+  <line x1="233" y1="56" x2="233" y2="618" stroke="#5DCAA5" stroke-width="1" stroke-dasharray="4 3"/>
+  <line x1="391" y1="56" x2="391" y2="618" stroke="#EF9F27" stroke-width="1" stroke-dasharray="4 3"/>
+  <line x1="549" y1="56" x2="549" y2="618" stroke="#AFA9EC" stroke-width="1" stroke-dasharray="4 3"/>
+
+  <!-- ══════════════════════════════════
+       FLUXO 1 — Importação CSV
+       ══════════════════════════════════ -->
+  <rect x="12" y="72" width="656" height="20" rx="3" fill="#F1EFE8" stroke="#D3D1C7" stroke-width="0.5"/>
+  <text font-family="sans-serif" font-size="11" fill="#5F5E5A" x="20" y="83" dominant-baseline="central">① Importação de dados — CSV INPE (assíncrona via Celery)</text>
+
+  <!-- POST /importar-csv/ -->
+  <text font-family="sans-serif" font-size="11" fill="#444441" x="154" y="103" text-anchor="middle">POST /importar-csv/</text>
+  <line x1="77" y1="111" x2="231" y2="111" stroke="#185FA5" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- dispatch task -->
+  <text font-family="sans-serif" font-size="11" fill="#444441" x="312" y="127" text-anchor="middle">dispatch importar_csv.delay()</text>
+  <line x1="235" y1="135" x2="389" y2="135" stroke="#185FA5" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- resposta imediata -->
+  <text font-family="sans-serif" font-size="11" fill="#888780" x="154" y="151" text-anchor="middle">{ task_id } — resposta imediata</text>
+  <line x1="231" y1="159" x2="77" y2="159" stroke="#B4B2A9" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#arrow)"/>
+
+  <!-- bulk_create -->
+  <text font-family="sans-serif" font-size="11" fill="#444441" x="470" y="175" text-anchor="middle">bulk_create focos (500/lote)</text>
+  <line x1="393" y1="183" x2="547" y2="183" stroke="#854F0B" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- OK -->
+  <text font-family="sans-serif" font-size="11" fill="#888780" x="470" y="199" text-anchor="middle">OK — n registros inseridos</text>
+  <line x1="547" y1="207" x2="393" y2="207" stroke="#B4B2A9" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#arrow)"/>
+
+  <!-- ══════════════════════════════════
+       FLUXO 2 — TOPSIS Fuzzy
+       ══════════════════════════════════ -->
+  <rect x="12" y="226" width="656" height="20" rx="3" fill="#F1EFE8" stroke="#D3D1C7" stroke-width="0.5"/>
+  <text font-family="sans-serif" font-size="11" fill="#5F5E5A" x="20" y="237" dominant-baseline="central">② Cálculo TOPSIS Fuzzy — análise multicritério</text>
+
+  <!-- POST /calcular-topsis/ -->
+  <text font-family="sans-serif" font-size="11" fill="#444441" x="154" y="257" text-anchor="middle">POST /calcular-topsis/</text>
+  <line x1="77" y1="265" x2="231" y2="265" stroke="#185FA5" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- aggregate -->
+  <text font-family="sans-serif" font-size="11" fill="#444441" x="391" y="281" text-anchor="middle">aggregate métricas por município</text>
+  <line x1="235" y1="289" x2="547" y2="289" stroke="#185FA5" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- retorno métricas -->
+  <text font-family="sans-serif" font-size="11" fill="#888780" x="391" y="305" text-anchor="middle">focos, FRP, risco, vento, NDVI</text>
+  <line x1="547" y1="313" x2="235" y2="313" stroke="#B4B2A9" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#arrow)"/>
+
+  <!-- self-loop TOPSIS -->
+  <text font-family="sans-serif" font-size="11" fill="#0F6E56" x="268" y="330" text-anchor="start">calcular_topsis_fuzzy() — NumPy + SciPy</text>
+  <path d="M 235 338 L 260 338 L 260 352 L 235 352" fill="none" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- save AreaRisco -->
+  <text font-family="sans-serif" font-size="11" fill="#444441" x="391" y="370" text-anchor="middle">save AreaRisco — score + ranking + nível</text>
+  <line x1="235" y1="378" x2="547" y2="378" stroke="#185FA5" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- retorno resultado -->
+  <text font-family="sans-serif" font-size="11" fill="#888780" x="154" y="394" text-anchor="middle">{ ranking, top_5, scores }</text>
+  <line x1="231" y1="402" x2="77" y2="402" stroke="#B4B2A9" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#arrow)"/>
+
+  <!-- ══════════════════════════════════
+       FLUXO 3 — Visualização no mapa
+       ══════════════════════════════════ -->
+  <rect x="12" y="422" width="656" height="20" rx="3" fill="#F1EFE8" stroke="#D3D1C7" stroke-width="0.5"/>
+  <text font-family="sans-serif" font-size="11" fill="#5F5E5A" x="20" y="433" dominant-baseline="central">③ Visualização no mapa — GeoJSON + Leaflet</text>
+
+  <!-- GET /focos/geojson/ -->
+  <text font-family="sans-serif" font-size="11" fill="#444441" x="154" y="453" text-anchor="middle">GET /focos/geojson/?bioma=CERRADO</text>
+  <line x1="77" y1="461" x2="231" y2="461" stroke="#185FA5" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- spatial query -->
+  <text font-family="sans-serif" font-size="11" fill="#444441" x="391" y="477" text-anchor="middle">SELECT + ST_Within(bbox) LIMIT 5000</text>
+  <line x1="235" y1="485" x2="547" y2="485" stroke="#185FA5" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- features -->
+  <text font-family="sans-serif" font-size="11" fill="#888780" x="391" y="501" text-anchor="middle">GeoJSON features (lat, lon, FRP, bioma…)</text>
+  <line x1="547" y1="509" x2="235" y2="509" stroke="#B4B2A9" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#arrow)"/>
+
+  <!-- FeatureCollection -->
+  <text font-family="sans-serif" font-size="11" fill="#888780" x="154" y="525" text-anchor="middle">FeatureCollection GeoJSON</text>
+  <line x1="231" y1="533" x2="77" y2="533" stroke="#B4B2A9" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#arrow)"/>
+
+  <!-- self-loop Leaflet -->
+  <text font-family="sans-serif" font-size="11" fill="#0F6E56" x="107" y="550" text-anchor="start">Leaflet renderiza pontos + heatmap + polígonos</text>
+  <path d="M 77 558 L 102 558 L 102 572 L 77 572" fill="none" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ── Legenda ── -->
+  <line x1="20"  y1="600" x2="58"  y2="600" stroke="#185FA5" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text font-family="sans-serif" font-size="11" fill="#5F5E5A" x="64" y="604">Requisição síncrona</text>
+  <line x1="190" y1="600" x2="228" y2="600" stroke="#B4B2A9" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#arrow)"/>
+  <text font-family="sans-serif" font-size="11" fill="#5F5E5A" x="234" y="604">Retorno / resposta</text>
+  <path d="M 360 596 L 382 596 L 382 606 L 360 606" fill="none" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text font-family="sans-serif" font-size="11" fill="#5F5E5A" x="388" y="604">Processamento interno</text>
+</svg>
