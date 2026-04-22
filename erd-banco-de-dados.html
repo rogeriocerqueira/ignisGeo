@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IgnisGeo — ERD do Banco de Dados</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f9fafb;
+      margin: 0;
+      padding: 2rem;
+      color: #111827;
+    }
+    h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+    .sub { font-size: 13px; color: #6b7280; margin: 0 0 2rem; }
+    #erd {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 2rem;
+      overflow-x: auto;
+    }
+    .legenda {
+      margin-top: 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .legenda span { display: flex; align-items: center; gap: 6px; }
+    .pill {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: 500;
+    }
+    .pk  { background: #FEF3C7; color: #92400E; }
+    .geo { background: #D1FAE5; color: #065F46; }
+    .idx { background: #DBEAFE; color: #1E40AF; }
+    .nil { background: #F3F4F6; color: #6B7280; }
+  </style>
+</head>
+<body>
+
+<h1>IgnisGeo — ERD do Banco de Dados</h1>
+<p class="sub">PostgreSQL 16 + PostGIS 3.4 · Gerado a partir dos models Django (GeoDjango)</p>
+
+<style>
+  #erd svg.erDiagram .divider path { stroke-opacity: 0.4; }
+  #erd svg.erDiagram .row-rect-odd path,
+  #erd svg.erDiagram .row-rect-odd rect,
+  #erd svg.erDiagram .row-rect-even path,
+  #erd svg.erDiagram .row-rect-even rect { stroke: none !important; }
+</style>
+<div id="erd"></div>
+
+<div class="legenda">
+  <span><span class="pill pk">PK</span> Chave primária</span>
+  <span><span class="pill geo">geometry</span> Tipo PostGIS (índice GIST automático)</span>
+  <span><span class="pill idx">INDEX</span> Índice B-tree explícito</span>
+  <span><span class="pill nil">nullable</span> Permite valor nulo</span>
+  <span>⬡ Relacionamento lógico — sem FK física (agrega via TOPSIS Fuzzy)</span>
+</div>
+
+<script type="module">
+import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+await document.fonts.ready;
+
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  themeVariables: {
+    darkMode: dark,
+    fontSize: '13px',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    lineColor: dark ? '#9c9a92' : '#6b7280',
+    textColor: dark ? '#c2c0b6' : '#1f2937',
+    primaryColor: dark ? '#1e3a5f' : '#EFF6FF',
+    primaryBorderColor: dark ? '#3b82f6' : '#3B82F6',
+    primaryTextColor: dark ? '#bfdbfe' : '#1E40AF',
+    secondaryColor: dark ? '#14532d' : '#F0FDF4',
+    tertiaryColor: dark ? '#2d2006' : '#FFFBEB',
+    edgeLabelBackground: dark ? '#1f2937' : '#f9fafb',
+    attributeBackgroundColorEven: dark ? '#1f2937' : '#f8fafc',
+    attributeBackgroundColorOdd:  dark ? '#111827' : '#ffffff',
+  },
+});
+
+const diagrama = `erDiagram
+    QUEIMADAS_FOCOQUEIMADA {
+        bigint      id               PK  "auto · serial"
+        geometry    localizacao          "POINT SRID-4326 · idx GIST"
+        timestamptz data_hora            "idx B-tree"
+        varchar     municipio            "max 100"
+        char        estado               "max 2 · idx B-tree"
+        varchar     bioma                "max 20 · idx B-tree · choices"
+        float8      frp                  "Fire Radiative Power em MW"
+        float8      risco_historico      "0.0 a 1.0 · default 0.0"
+        float8      vento_ms             "nullable · m/s"
+        float8      ndvi                 "nullable · -1.0 a 1.0"
+        varchar     satelite             "max 50 · blank"
+        timestamptz criado_em            "auto_now_add"
+    }
+
+    QUEIMADAS_AREARISCO {
+        bigint      id                       PK  "auto · serial"
+        varchar     nome                         "max 200"
+        char        estado                       "max 2"
+        varchar     bioma                        "max 20"
+        geometry    geometria                    "MULTIPOLYGON SRID-4326 · idx GIST"
+        float8      score_topsis                 "0.0 a 1.0 · TOPSIS Fuzzy"
+        integer     ranking                      "ordenado ASC"
+        varchar     nivel_risco                  "max 10 · CRITICO|ALTO|MEDIO|BAIXO"
+        integer     total_focos                  "default 0"
+        float8      frp_media                    "default 0.0"
+        float8      risco_historico_medio        "default 0.0"
+        float8      vento_medio                  "default 0.0"
+        float8      ndvi_medio                   "default 0.0"
+        date        periodo_inicio
+        date        periodo_fim
+        timestamptz atualizado_em                "auto_now"
+    }
+
+    QUEIMADAS_FOCOQUEIMADA }o..o{ QUEIMADAS_AREARISCO : "agrega via TOPSIS Fuzzy"
+`;
+
+const { svg } = await mermaid.render('erd-svg', diagrama);
+document.getElementById('erd').innerHTML = svg;
+
+document.querySelectorAll('#erd svg.erDiagram .node').forEach(node => {
+  const firstPath = node.querySelector('path[d]');
+  if (!firstPath) return;
+  const d = firstPath.getAttribute('d');
+  const nums = d.match(/-?[\d.]+/g)?.map(Number);
+  if (!nums || nums.length < 8) return;
+  const xs = [nums[0], nums[2], nums[4], nums[6]];
+  const ys = [nums[1], nums[3], nums[5], nums[7]];
+  const x = Math.min(...xs), y = Math.min(...ys);
+  const w = Math.max(...xs) - x, h = Math.max(...ys) - y;
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('x', x);
+  rect.setAttribute('y', y);
+  rect.setAttribute('width', w);
+  rect.setAttribute('height', h);
+  rect.setAttribute('rx', '8');
+  for (const a of ['fill', 'stroke', 'stroke-width', 'class', 'style']) {
+    if (firstPath.hasAttribute(a)) rect.setAttribute(a, firstPath.getAttribute(a));
+  }
+  firstPath.replaceWith(rect);
+});
+
+document.querySelectorAll(
+  '#erd svg.erDiagram .row-rect-odd path, #erd svg.erDiagram .row-rect-even path'
+).forEach(p => p.setAttribute('stroke', 'none'));
+</script>
+</body>
+</html>
