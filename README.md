@@ -44,24 +44,11 @@ Score  < 0.35 →  Baixo
 
 ## Arquitetura do Sistema
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                     Frontend Vue 3                       │
-│         Leaflet · Pinia · Heatmap · Filtros              │
-└───────────────────────┬─────────────────────────────────┘
-                        │ REST API (GeoJSON)
-┌───────────────────────▼─────────────────────────────────┐
-│                  Backend Django 5                         │
-│   GeoDjango · DRF · TOPSIS Fuzzy (NumPy/SciPy)          │
-│   Celery · Redis · GeoPandas · Shapely                   │
-└──────────────┬───────────────────────┬──────────────────┘
-               │                       │
-┌──────────────▼──────┐   ┌────────────▼───────────────────┐
-│  PostgreSQL + PostGIS│   │   INPE BDQueimadas             │
-│  PointField · GIST   │   │   CSV / API focos de calor     │
-│  MultiPolygonField   │   └────────────────────────────────┘
-└─────────────────────┘
-```
+O diagrama abaixo ilustra os três fluxos principais de comunicação entre os componentes: importação assíncrona dos dados do INPE via Celery, execução do algoritmo TOPSIS Fuzzy e visualização dos resultados em GeoJSON pelo frontend Vue 3 + Leaflet.
+
+![Diagrama de Sequência — IgnisGeo](diagrama-sequencia-queimadas.svg)
+
+> **Legenda:** setas sólidas = requisição síncrona · setas tracejadas = retorno/resposta · loop fechado = processamento interno
 
 ---
 
@@ -199,20 +186,11 @@ Cada registro contém: latitude, longitude, data/hora (GMT), satélite, municíp
 
 ---
 
-## Autor
-
-**[Rogério do Santos Cerqueira]**  
-Curso de [Nome do Curso]  
-[Nome da Instituição de Ensino]  
-[E-mail institucional]  
-[LinkedIn] · [Lattes]
-
----
 
 ## Licença
 
 Este projeto foi desenvolvido como Trabalho de Conclusão de Curso e é disponibilizado para fins acadêmicos.  
-Licença [MIT](LICENSE) 
+Licença [MIT](LICENSE) — sinta-se livre para estudar, adaptar e referenciar com a devida citação.
 
 ---
 
