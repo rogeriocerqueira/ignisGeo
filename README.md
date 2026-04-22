@@ -148,6 +148,101 @@ curl -X POST http://localhost:8000/api/calcular-topsis/ \
 
 ---
 
+## Banco de Dados — ERD
+
+As duas tabelas geradas pelo Django no PostgreSQL + PostGIS. Não há chave estrangeira direta entre elas — `queimadas_arearisco` é populada pelo algoritmo TOPSIS Fuzzy que agrega os dados de `queimadas_focoqueimada` por município/bioma.
+
+```mermaid
+erDiagram
+
+    queimadas_focoqueimada {
+        bigint      id                  PK  "AUTO gerado"
+        geometry    localizacao             "PointField · SRID 4326 WGS84"
+        timestamp   data_hora           IDX "WITH TIME ZONE"
+        varchar100  municipio
+        varchar2    estado              IDX
+        varchar20   bioma               IDX "AMAZONIA | CERRADO | CAATINGA | MATA_ATLANTICA | PANTANAL | PAMPA"
+        float8      frp                     "Fire Radiative Power em MW"
+        float8      risco_historico         "0.0 a 1.0 · DEFAULT 0.0"
+        float8      vento_ms                "NULLABLE · m/s"
+        float8      ndvi                    "NULLABLE · -1 a 1"
+        varchar50   satelite                "BLANK"
+        timestamp   criado_em               "AUTO NOW ADD"
+    }
+
+    queimadas_arearisco {
+        bigint      id                  PK  "AUTO gerado"
+        varchar200  nome
+        varchar2    estado
+        varchar20   bioma
+        geometry    geometria               "MultiPolygonField · SRID 4326 WGS84"
+        float8      score_topsis            "0.0 a 1.0 · resultado TOPSIS Fuzzy"
+        integer     ranking                 "Posição no ranking geral"
+        varchar10   nivel_risco             "CRITICO | ALTO | MEDIO | BAIXO"
+        integer     total_focos             "DEFAULT 0"
+        float8      frp_media               "DEFAULT 0.0"
+        float8      risco_historico_medio   "DEFAULT 0.0"
+        float8      vento_medio             "DEFAULT 0.0"
+        float8      ndvi_medio              "DEFAULT 0.0"
+        date        periodo_inicio
+        date        periodo_fim
+        timestamp   atualizado_em           "AUTO NOW"
+    }
+
+    queimadas_focoqueimada }o--o{ queimadas_arearisco : "agrega para calcular"
+```
+
+> Para visualizar localmente com mais detalhes, abra [`erd.html`](erd.html) no navegador.
+
+---
+
+## Banco de Dados — ERD
+
+Estrutura das tabelas no PostgreSQL + PostGIS. Os nomes seguem a convenção do Django (`appname_modelname`). O relacionamento entre as tabelas é **lógico** — `AreaRisco` é calculada agregando registros de `FocoQueimada` via TOPSIS Fuzzy, sem chave estrangeira física.
+
+```mermaid
+erDiagram
+    QUEIMADAS_FOCOQUEIMADA {
+        bigint      id               PK  "auto serial"
+        geometry    localizacao          "POINT SRID-4326 idx GIST"
+        timestamptz data_hora            "idx B-tree"
+        varchar     municipio            "max 100"
+        char        estado               "max 2 idx B-tree"
+        varchar     bioma                "max 20 idx B-tree choices"
+        float8      frp                  "Fire Radiative Power MW"
+        float8      risco_historico      "0.0 a 1.0 default 0.0"
+        float8      vento_ms             "nullable m/s"
+        float8      ndvi                 "nullable -1.0 a 1.0"
+        varchar     satelite             "max 50"
+        timestamptz criado_em            "auto_now_add"
+    }
+
+    QUEIMADAS_AREARISCO {
+        bigint      id                    PK  "auto serial"
+        varchar     nome                      "max 200"
+        char        estado                    "max 2"
+        varchar     bioma                     "max 20"
+        geometry    geometria                 "MULTIPOLYGON SRID-4326 idx GIST"
+        float8      score_topsis              "0.0 a 1.0 TOPSIS Fuzzy"
+        integer     ranking                   "ordenado ASC"
+        varchar     nivel_risco               "CRITICO ALTO MEDIO BAIXO"
+        integer     total_focos               "default 0"
+        float8      frp_media                 "default 0.0"
+        float8      risco_historico_medio     "default 0.0"
+        float8      vento_medio               "default 0.0"
+        float8      ndvi_medio                "default 0.0"
+        date        periodo_inicio
+        date        periodo_fim
+        timestamptz atualizado_em             "auto_now"
+    }
+
+    QUEIMADAS_FOCOQUEIMADA }o..o{ QUEIMADAS_AREARISCO : "agrega via TOPSIS Fuzzy"
+```
+
+> Para visualização interativa com legenda de índices e tipos PostGIS, abra [`erd-banco-de-dados.html`](erd-banco-de-dados.html) no navegador.
+
+---
+
 ## Diagrama de Classes
 
 Visão dos **models Django**, **serializers DRF** e da classe de domínio `NumeroFuzzy` do algoritmo TOPSIS Fuzzy, com seus atributos, métodos e relacionamentos.
@@ -258,6 +353,8 @@ ignisgeo/
 ├── diagrama-componentes-c4.svg  # Arquitetura estática (C4 Container)
 ├── diagrama-sequencia.svg       # Fluxos de sequência
 ├── diagrama-classes.html        # Diagrama de classes (abre no navegador)
+├── erd-banco-de-dados.html      # ERD PostgreSQL + PostGIS (abre no navegador)
+├── erd.html                     # ERD do banco de dados (abre no navegador)
 ├── docker-compose.yml
 └── README.md
 ```
