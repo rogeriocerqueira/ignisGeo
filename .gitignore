@@ -1,0 +1,67 @@
+# ─────────────────────────────────────
+# Python / Django
+# ─────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Ambiente virtual
+venv/
+.venv/
+env/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+/backend/staticfiles/
+/backend/media/
+
+# Variáveis de ambiente
+.env
+.env.*
+!.env.example
+
+# ─────────────────────────────────────
+# Node / Vue
+# ─────────────────────────────────────
+node_modules/
+/frontend/dist/
+/frontend/.vite/
+/frontend/coverage/
+*.local
+
+# ─────────────────────────────────────
+# Dados INPE (podem ser grandes)
+# ─────────────────────────────────────
+/data/*.csv
+/data/*.zip
+/data/*.shp
+/data/*.dbf
+/data/*.shx
+/data/*.prj
+
+# ─────────────────────────────────────
+# Docker
+# ─────────────────────────────────────
+docker-compose.override.yml
+
+# ─────────────────────────────────────
+# Sistema operacional
+# ─────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo 
