@@ -148,6 +148,93 @@ curl -X POST http://localhost:8000/api/calcular-topsis/ \
 
 ---
 
+## Diagrama de Classes
+
+Visão dos **models Django**, **serializers DRF** e da classe de domínio `NumeroFuzzy` do algoritmo TOPSIS Fuzzy, com seus atributos, métodos e relacionamentos.
+
+```mermaid
+classDiagram
+    direction LR
+
+    class FocoQueimada {
+        <<Model · GeoDjango>>
+        +PointField localizacao
+        +DateTimeField data_hora
+        +CharField municipio
+        +CharField estado
+        +CharField bioma
+        +FloatField frp
+        +FloatField risco_historico
+        +FloatField vento_ms
+        +FloatField ndvi
+        +CharField satelite
+        +DateTimeField criado_em
+        +latitude() float
+        +longitude() float
+        +__str__() str
+    }
+
+    class AreaRisco {
+        <<Model · GeoDjango>>
+        +CharField nome
+        +CharField estado
+        +CharField bioma
+        +MultiPolygonField geometria
+        +FloatField score_topsis
+        +PositiveIntegerField ranking
+        +CharField nivel_risco
+        +IntegerField total_focos
+        +FloatField frp_media
+        +FloatField risco_historico_medio
+        +FloatField vento_medio
+        +FloatField ndvi_medio
+        +DateField periodo_inicio
+        +DateField periodo_fim
+        +DateTimeField atualizado_em
+        +__str__() str
+    }
+
+    class NumeroFuzzy {
+        <<dataclass · TOPSIS>>
+        +float a
+        +float b
+        +float c
+        +distancia(outro: NumeroFuzzy) float
+    }
+
+    class FocoQueimadaGeoSerializer {
+        <<GeoFeatureModelSerializer>>
+        +geo_field = localizacao
+    }
+
+    class FocoQueimadaListSerializer {
+        <<ModelSerializer>>
+        +FloatField latitude
+        +FloatField longitude
+    }
+
+    class AreaRiscoGeoSerializer {
+        <<GeoFeatureModelSerializer>>
+        +geo_field = geometria
+        +CharField nivel_risco_display
+    }
+
+    class AreaRiscoRankingSerializer {
+        <<ModelSerializer>>
+        +CharField nivel_risco_display
+    }
+
+    FocoQueimadaGeoSerializer ..> FocoQueimada : serializa
+    FocoQueimadaListSerializer ..> FocoQueimada : serializa
+    AreaRiscoGeoSerializer ..> AreaRisco : serializa
+    AreaRiscoRankingSerializer ..> AreaRisco : serializa
+    AreaRisco ..> NumeroFuzzy : calcula via TOPSIS
+```
+
+> Para visualizar o diagrama localmente com mais detalhes, abra o arquivo [`diagrama-classes.html`](diagrama-classes.html) no navegador.
+
+---
+
 ## Estrutura do Repositório
 
 ```
@@ -168,6 +255,9 @@ ignisgeo/
 │       ├── components/          # MapaQueimadas, FiltrosPainel, PainelRanking
 │       └── stores/              # Pinia store
 ├── data/                        # CSVs do INPE (não versionados)
+├── diagrama-componentes-c4.svg  # Arquitetura estática (C4 Container)
+├── diagrama-sequencia.svg       # Fluxos de sequência
+├── diagrama-classes.html        # Diagrama de classes (abre no navegador)
 ├── docker-compose.yml
 └── README.md
 ```
