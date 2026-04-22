@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 680 578" role="img">
+  <title>Diagrama de componentes C4 — IgnisGeo</title>
+  <desc>Visão estática dos containers do sistema IgnisGeo: Frontend Vue 3, API Django, Celery Worker, PostGIS e Redis, com atores externos Usuário e INPE</desc>
+
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <!-- ═══════════════════════════════════════
+       ATORES EXTERNOS (fora do sistema)
+       ═══════════════════════════════════════ -->
+
+  <!-- Usuário -->
+  <circle cx="60" cy="26" r="18" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/>
+  <line x1="60" y1="44" x2="60" y2="58" stroke="#5F5E5A" stroke-width="1.2"/>
+  <line x1="42" y1="52" x2="78" y2="52" stroke="#5F5E5A" stroke-width="1.2"/>
+  <line x1="60" y1="58" x2="46" y2="70" stroke="#5F5E5A" stroke-width="1.2"/>
+  <line x1="60" y1="58" x2="74" y2="70" stroke="#5F5E5A" stroke-width="1.2"/>
+  <text font-family="sans-serif" font-size="12" font-weight="600" fill="#444441" x="60" y="85" text-anchor="middle">Usuário</text>
+  <text font-family="sans-serif" font-size="10" fill="#888780" x="60" y="98" text-anchor="middle">[Pessoa]</text>
+
+  <!-- INPE BDQueimadas -->
+  <rect x="490" y="8" width="178" height="58" rx="6" fill="#FAECE7" stroke="#993C1D" stroke-width="0.8"/>
+  <text font-family="sans-serif" font-size="12" font-weight="600" fill="#712B13" x="579" y="28" text-anchor="middle">INPE BDQueimadas</text>
+  <text font-family="sans-serif" font-size="10" fill="#993C1D" x="579" y="43" text-anchor="middle">[Sistema externo]</text>
+  <text font-family="sans-serif" font-size="10" fill="#993C1D" x="579" y="57" text-anchor="middle">Focos de calor — CSV/API</text>
+
+  <!-- ═══════════════════════════════════════
+       LIMITE DO SISTEMA (boundary)
+       ═══════════════════════════════════════ -->
+  <rect x="12" y="110" width="656" height="436" rx="10" fill="none" stroke="#B4B2A9" stroke-width="1" stroke-dasharray="8 4"/>
+  <text font-family="sans-serif" font-size="10" fill="#888780" x="24" y="125">IgnisGeo — limite do sistema</text>
+
+  <!-- ═══════════════════════════════════════
+       CONTAINER 1 — Frontend Vue 3
+       ═══════════════════════════════════════ -->
+  <rect x="198" y="136" width="244" height="80" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/>
+  <text font-family="sans-serif" font-size="13" font-weight="700" fill="#0C447C" x="320" y="159" text-anchor="middle">Frontend</text>
+  <text font-family="sans-serif" font-size="10" fill="#185FA5" x="320" y="175" text-anchor="middle">[Vue 3 · Pinia · Leaflet]</text>
+  <text font-family="sans-serif" font-size="10" fill="#185FA5" x="320" y="191" text-anchor="middle">Interface web e mapas interativos</text>
+  <text font-family="sans-serif" font-size="10" fill="#185FA5" x="320" y="205" text-anchor="middle">Heatmap · filtros · ranking TOPSIS</text>
+
+  <!-- ═══════════════════════════════════════
+       CONTAINER 2 — API Django
+       ═══════════════════════════════════════ -->
+  <rect x="56" y="292" width="236" height="80" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="1"/>
+  <text font-family="sans-serif" font-size="13" font-weight="700" fill="#085041" x="174" y="315" text-anchor="middle">API REST</text>
+  <text font-family="sans-serif" font-size="10" fill="#0F6E56" x="174" y="331" text-anchor="middle">[Django 5 · DRF · GeoDjango]</text>
+  <text font-family="sans-serif" font-size="10" fill="#0F6E56" x="174" y="347" text-anchor="middle">TOPSIS Fuzzy · endpoints GeoJSON</text>
+  <text font-family="sans-serif" font-size="10" fill="#0F6E56" x="174" y="362" text-anchor="middle">NumPy · GeoPandas · Shapely</text>
+
+  <!-- ═══════════════════════════════════════
+       CONTAINER 3 — Celery Worker
+       ═══════════════════════════════════════ -->
+  <rect x="372" y="292" width="220" height="80" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="1"/>
+  <text font-family="sans-serif" font-size="13" font-weight="700" fill="#633806" x="482" y="315" text-anchor="middle">Celery Worker</text>
+  <text font-family="sans-serif" font-size="10" fill="#854F0B" x="482" y="331" text-anchor="middle">[Python · Redis broker]</text>
+  <text font-family="sans-serif" font-size="10" fill="#854F0B" x="482" y="347" text-anchor="middle">Importação CSV assíncrona</text>
+  <text font-family="sans-serif" font-size="10" fill="#854F0B" x="482" y="362" text-anchor="middle">Processamento em lotes · retry</text>
+
+  <!-- ═══════════════════════════════════════
+       CONTAINER 4 — PostgreSQL + PostGIS
+       ═══════════════════════════════════════ -->
+  <rect x="56" y="448" width="220" height="76" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="1"/>
+  <text font-family="sans-serif" font-size="13" font-weight="700" fill="#3C3489" x="166" y="471" text-anchor="middle">Banco de dados</text>
+  <text font-family="sans-serif" font-size="10" fill="#534AB7" x="166" y="487" text-anchor="middle">[PostgreSQL 16 · PostGIS 3.4]</text>
+  <text font-family="sans-serif" font-size="10" fill="#534AB7" x="166" y="503" text-anchor="middle">Focos · áreas · geometrias</text>
+  <text font-family="sans-serif" font-size="10" fill="#534AB7" x="166" y="517" text-anchor="middle">PointField · GIST · ST_Within</text>
+
+  <!-- ═══════════════════════════════════════
+       CONTAINER 5 — Redis
+       ═══════════════════════════════════════ -->
+  <rect x="384" y="452" width="176" height="68" rx="8" fill="#EAF3DE" stroke="#3B6D11" stroke-width="1"/>
+  <text font-family="sans-serif" font-size="13" font-weight="700" fill="#27500A" x="472" y="475" text-anchor="middle">Redis</text>
+  <text font-family="sans-serif" font-size="10" fill="#3B6D11" x="472" y="491" text-anchor="middle">[Message broker · cache]</text>
+  <text font-family="sans-serif" font-size="10" fill="#3B6D11" x="472" y="507" text-anchor="middle">Fila de tarefas Celery</text>
+
+  <!-- ═══════════════════════════════════════
+       SETAS / RELACIONAMENTOS
+       ═══════════════════════════════════════ -->
+
+  <!-- 1. Usuário → Frontend (L-bend acima da boundary) -->
+  <path d="M 60 72 L 60 100 L 320 100 L 320 136" fill="none" stroke="#5F5E5A" stroke-width="1.2" marker-end="url(#arr)"/>
+  <text font-family="sans-serif" font-size="10" fill="#888780" x="192" y="96" text-anchor="middle">HTTPS · navegador</text>
+
+  <!-- 2. INPE → Celery Worker (diagonal) -->
+  <path d="M 579 66 L 579 100 L 482 100 L 482 292" fill="none" stroke="#993C1D" stroke-width="1.2" stroke-dasharray="5 3" marker-end="url(#arr)"/>
+  <text font-family="sans-serif" font-size="10" fill="#993C1D" x="538" y="96" text-anchor="middle">CSV download</text>
+
+  <!-- 3. Frontend → API (L-bend para baixo-esquerda) -->
+  <path d="M 278 216 L 278 254 L 174 254 L 174 292" fill="none" stroke="#185FA5" stroke-width="1.2" marker-end="url(#arr)"/>
+  <text font-family="sans-serif" font-size="10" fill="#888780" x="212" y="250" text-anchor="middle">REST · GeoJSON</text>
+
+  <!-- 4. Frontend → Celery (L-bend para baixo-direita) -->
+  <path d="M 362 216 L 362 264 L 482 264 L 482 292" fill="none" stroke="#185FA5" stroke-width="1.2" marker-end="url(#arr)"/>
+  <text font-family="sans-serif" font-size="10" fill="#888780" x="422" y="261" text-anchor="middle">POST /importar-csv/</text>
+
+  <!-- 5. API ↔ Celery (bidirecional) -->
+  <line x1="292" y1="332" x2="372" y2="332" stroke="#444441" stroke-width="1.2" marker-end="url(#arr)" marker-start="url(#arr)"/>
+  <text font-family="sans-serif" font-size="10" fill="#888780" x="332" y="326" text-anchor="middle">dispatch task</text>
+
+  <!-- 6. API → PostGIS (vertical) -->
+  <path d="M 174 372 L 174 448" fill="none" stroke="#0F6E56" stroke-width="1.2" marker-end="url(#arr)"/>
+  <text font-family="sans-serif" font-size="10" fill="#888780" x="124" y="414" text-anchor="middle">SQL · PostGIS</text>
+
+  <!-- 7. Celery → PostGIS (L-bend) -->
+  <path d="M 382 372 L 382 420 L 276 420 L 276 448" fill="none" stroke="#854F0B" stroke-width="1.2" marker-end="url(#arr)"/>
+  <text font-family="sans-serif" font-size="10" fill="#888780" x="348" y="416" text-anchor="middle">bulk_create</text>
+
+  <!-- 8. Celery → Redis (vertical) -->
+  <path d="M 482 372 L 482 452" fill="none" stroke="#854F0B" stroke-width="1.2" marker-end="url(#arr)"/>
+  <text font-family="sans-serif" font-size="10" fill="#888780" x="522" y="416" text-anchor="middle">enqueue / result</text>
+
+  <!-- ═══════════════════════════════════════
+       LEGENDA
+       ═══════════════════════════════════════ -->
+  <rect x="16" y="552" width="14" height="10" rx="2" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.8"/>
+  <text font-family="sans-serif" font-size="10" fill="#5F5E5A" x="36" y="561">Container (aplicação)</text>
+
+  <rect x="160" y="552" width="14" height="10" rx="2" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/>
+  <text font-family="sans-serif" font-size="10" fill="#5F5E5A" x="180" y="561">Banco de dados</text>
+
+  <rect x="290" y="552" width="14" height="10" rx="2" fill="#FAECE7" stroke="#993C1D" stroke-width="0.8"/>
+  <text font-family="sans-serif" font-size="10" fill="#5F5E5A" x="310" y="561">Sistema externo</text>
+
+  <line x1="418" y1="556" x2="444" y2="556" stroke="#444441" stroke-width="1.2" stroke-dasharray="5 3" marker-end="url(#arr)"/>
+  <text font-family="sans-serif" font-size="10" fill="#5F5E5A" x="450" y="561">Comunicação externa</text>
+
+  <line x1="572" y1="556" x2="598" y2="556" stroke="#0F6E56" stroke-width="1.2" marker-end="url(#arr)"/>
+  <text font-family="sans-serif" font-size="10" fill="#5F5E5A" x="604" y="561">Comunicação interna</text>
+</svg>
