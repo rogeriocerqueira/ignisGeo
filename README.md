@@ -203,37 +203,37 @@ Estrutura das tabelas no PostgreSQL + PostGIS. Os nomes seguem a convenção do 
 ```mermaid
 erDiagram
     QUEIMADAS_FOCOQUEIMADA {
-        bigint      id               PK  "auto serial"
-        geometry    localizacao          "POINT SRID-4326 idx GIST"
-        timestamptz data_hora            "idx B-tree"
-        varchar     municipio            "max 100"
-        char        estado               "max 2 idx B-tree"
-        varchar     bioma                "max 20 idx B-tree choices"
-        float8      frp                  "Fire Radiative Power MW"
-        float8      risco_historico      "0.0 a 1.0 default 0.0"
-        float8      vento_ms             "nullable m/s"
-        float8      ndvi                 "nullable -1.0 a 1.0"
-        varchar     satelite             "max 50"
-        timestamptz criado_em            "auto_now_add"
+        bigint   id             PK
+        geometry localizacao       "POINT 4326 - idx GIST"
+        timestamp data_hora        "idx B-tree"
+        varchar  municipio         "max 100"
+        char     estado            "max 2 - idx B-tree"
+        varchar  bioma             "max 20 - idx B-tree"
+        float    frp               "Fire Radiative Power MW"
+        float    risco_historico   "0.0 a 1.0"
+        float    vento_ms          "nullable"
+        float    ndvi              "nullable"
+        varchar  satelite          "max 50"
+        timestamp criado_em        "auto_now_add"
     }
 
     QUEIMADAS_AREARISCO {
-        bigint      id                    PK  "auto serial"
-        varchar     nome                      "max 200"
-        char        estado                    "max 2"
-        varchar     bioma                     "max 20"
-        geometry    geometria                 "MULTIPOLYGON SRID-4326 idx GIST"
-        float8      score_topsis              "0.0 a 1.0 TOPSIS Fuzzy"
-        integer     ranking                   "ordenado ASC"
-        varchar     nivel_risco               "CRITICO ALTO MEDIO BAIXO"
-        integer     total_focos               "default 0"
-        float8      frp_media                 "default 0.0"
-        float8      risco_historico_medio     "default 0.0"
-        float8      vento_medio               "default 0.0"
-        float8      ndvi_medio                "default 0.0"
-        date        periodo_inicio
-        date        periodo_fim
-        timestamptz atualizado_em             "auto_now"
+        bigint   id                   PK
+        varchar  nome                    "max 200"
+        char     estado                  "max 2"
+        varchar  bioma                   "max 20"
+        geometry geometria               "MULTIPOLYGON 4326 - idx GIST"
+        float    score_topsis            "0.0 a 1.0 - TOPSIS Fuzzy"
+        integer  ranking                 "ordenado ASC"
+        varchar  nivel_risco             "CRITICO ALTO MEDIO BAIXO"
+        integer  total_focos             "default 0"
+        float    frp_media               "default 0.0"
+        float    risco_historico_medio   "default 0.0"
+        float    vento_medio             "default 0.0"
+        float    ndvi_medio              "default 0.0"
+        date     periodo_inicio
+        date     periodo_fim
+        timestamp atualizado_em          "auto_now"
     }
 
     QUEIMADAS_FOCOQUEIMADA }o..o{ QUEIMADAS_AREARISCO : "agrega via TOPSIS Fuzzy"
