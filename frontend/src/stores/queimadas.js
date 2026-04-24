@@ -4,94 +4,135 @@ import { focosApi, areasApi, analiseApi } from "@/api";
 
 export const useQueimadasStore = defineStore("queimadas", () => {
   // --- Estado ---
-  const focosGeoJSON = ref(null);
-  const areasGeoJSON = ref(null);
-  const ranking = ref([]);
-  const estatisticas = ref(null);
+  const focosGeoJSON  = ref(null);
+  const areasGeoJSON  = ref(null);
+  const ranking       = ref([]);
+  const estatisticas  = ref(null);
 
-  const carregando = ref(false);
-  const erro = ref(null);
+  // Contador de requests em andamento — evita race condition no loading
+  const _carregandoCount = ref(0);
+  const carregando = computed(() => _carregandoCount.value > 0);
 
-  // Filtros ativos
+  // Erros por contexto — não se sobrescrevem
+  const erros = ref({ focos: null, areas: null, ranking: null, topsis: null });
+  const erro  = computed(() =>
+    erros.value.topsis
+    ?? erros.value.focos
+    ?? erros.value.areas
+    ?? erros.value.ranking
+    ?? null
+  );
+
+  // Filtros — SEMPRE camelCase internamente
   const filtros = ref({
-    bioma: "",
-    estado: "",
+    bioma:      "",
+    estado:     "",
     dataInicio: "",
-    dataFim: "",
+    dataFim:    "",
     nivelRisco: "",
   });
 
   // --- Getters ---
-  const totalFocos = computed(() => estatisticas.value?.total_focos ?? 0);
+  const totalFocos    = computed(() => estatisticas.value?.total_focos    ?? 0);
   const areasCriticas = computed(() => estatisticas.value?.areas_criticas ?? 0);
-  const porBioma = computed(() => estatisticas.value?.por_bioma ?? []);
+  const porBioma      = computed(() => estatisticas.value?.por_bioma      ?? []);
+  const rankingTop10  = computed(() => ranking.value.slice(0, 10));
 
-  const rankingTop10 = computed(() => ranking.value.slice(0, 10));
+  // --- Helpers ---
+  function _inc() { _carregandoCount.value++; }
+  function _dec() { _carregandoCount.value = Math.max(0, _carregandoCount.value - 1); }
+
+  /**
+   * Converte filtros camelCase internos para snake_case para a API.
+   * Remove entradas vazias.
+   */
+  function filtrosAtivos() {
+    const mapa = {
+      bioma:      "bioma",
+      estado:     "estado",
+      dataInicio: "data_inicio",
+      dataFim:    "data_fim",
+      nivelRisco: "nivel_risco",
+    };
+    return Object.fromEntries(
+      Object.entries(filtros.value)
+        .filter(([, v]) => v !== "")
+        .map(([k, v]) => [mapa[k] ?? k, v])
+    );
+  }
 
   // --- Actions ---
   async function carregarFocosGeoJSON() {
-    carregando.value = true;
-    erro.value = null;
+    _inc();
+    erros.value.focos = null;
     try {
-      const params = filtrosAtivos();
-      const { data } = await focosApi.getGeoJSON(params);
+      const { data } = await focosApi.getGeoJSON(filtrosAtivos());
       focosGeoJSON.value = data;
-    } catch (e) {
-      erro.value = "Erro ao carregar focos de queimada.";
+    } catch {
+      erros.value.focos = "Erro ao carregar focos de queimada.";
     } finally {
-      carregando.value = false;
+      _dec();
     }
   }
 
   async function carregarAreasRisco() {
-    carregando.value = true;
-    erro.value = null;
+    _inc();
+    erros.value.areas = null;
     try {
-      const params = filtrosAtivos();
-      const { data } = await areasApi.getGeoJSON(params);
+      const { data } = await areasApi.getGeoJSON(filtrosAtivos());
       areasGeoJSON.value = data;
-    } catch (e) {
-      erro.value = "Erro ao carregar áreas de risco.";
+    } catch {
+      erros.value.areas = "Erro ao carregar áreas de risco.";
     } finally {
-      carregando.value = false;
+      _dec();
     }
   }
 
   async function carregarRanking() {
+    _inc();
+    erros.value.ranking = null;
     try {
       const { data } = await areasApi.getRanking();
       ranking.value = data.results ?? data;
-    } catch (e) {
-      erro.value = "Erro ao carregar ranking.";
+    } catch {
+      erros.value.ranking = "Erro ao carregar ranking.";
+    } finally {
+      _dec();
     }
   }
 
   async function carregarEstatisticas() {
+    _inc();
     try {
       const { data } = await analiseApi.getEstatisticas();
       estatisticas.value = data;
     } catch (e) {
       console.error("Erro ao carregar estatísticas:", e);
+    } finally {
+      _dec();
     }
   }
 
   async function executarTopsis(dataInicio, dataFim) {
-    carregando.value = true;
-    erro.value = null;
+    _inc();
+    erros.value.topsis = null;
     try {
       const { data } = await analiseApi.calcularTopsis(dataInicio, dataFim);
-      // Recarrega as áreas após o cálculo
-      await carregarAreasRisco();
-      await carregarRanking();
+      // Recarrega áreas e ranking após o cálculo
+      await Promise.all([carregarAreasRisco(), carregarRanking()]);
       return data;
     } catch (e) {
-      erro.value = "Erro ao calcular TOPSIS Fuzzy.";
+      erros.value.topsis = "Erro ao calcular TOPSIS Fuzzy.";
       throw e;
     } finally {
-      carregando.value = false;
+      _dec();
     }
   }
 
+  /**
+   * Aplica filtros — sempre recebe chaves camelCase.
+   * FiltrosPainel.vue deve passar: { bioma, estado, nivelRisco, dataInicio, dataFim }
+   */
   function aplicarFiltros(novosFiltros) {
     filtros.value = { ...filtros.value, ...novosFiltros };
     carregarFocosGeoJSON();
@@ -104,23 +145,6 @@ export const useQueimadasStore = defineStore("queimadas", () => {
     carregarAreasRisco();
   }
 
-  // Monta objeto de params apenas com valores preenchidos
-function filtrosAtivos() {
-    const mapa = {
-        bioma:      "bioma",
-        estado:     "estado",
-        dataInicio: "data_inicio",
-        dataFim:    "data_fim",
-        nivelRisco: "nivel_risco",
-    };
-    return Object.fromEntries(
-        Object.entries(filtros.value)
-            .filter(([, v]) => v !== "")
-            .map(([k, v]) => [mapa[k] || k, v])
-    );
-}
-
-  // Carrega tudo na inicialização
   async function inicializar() {
     await Promise.all([
       carregarEstatisticas(),
@@ -131,9 +155,12 @@ function filtrosAtivos() {
   }
 
   return {
+    // Estado
     focosGeoJSON, areasGeoJSON, ranking, estatisticas,
-    carregando, erro, filtros,
+    carregando, erro, erros, filtros,
+    // Getters
     totalFocos, areasCriticas, porBioma, rankingTop10,
+    // Actions
     carregarFocosGeoJSON, carregarAreasRisco,
     carregarRanking, carregarEstatisticas,
     executarTopsis, aplicarFiltros, limparFiltros, inicializar,

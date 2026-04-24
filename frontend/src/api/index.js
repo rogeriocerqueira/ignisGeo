@@ -7,9 +7,10 @@ const api = axios.create({
 });
 
 export const focosApi = {
-  /** Retorna FeatureCollection GeoJSON dos focos para o Leaflet */
-  getGeoJSON(params = {}) {
-    return api.get("/focos/geojson/", { params });
+  async getGeoJSON(params = {}) {
+    const { data } = await api.get("/focos/geojson/", { params });
+    // API retorna { count, results: FeatureCollection } com paginação
+    return { data: data.results ?? data };
   },
 
   /** Lista simplificada para tabelas */
@@ -19,9 +20,9 @@ export const focosApi = {
 };
 
 export const areasApi = {
-  /** Retorna FeatureCollection GeoJSON das áreas de risco */
-  getGeoJSON(params = {}) {
-    return api.get("/areas-risco/geojson/", { params });
+  async getGeoJSON(params = {}) {
+    const { data } = await api.get("/areas-risco/geojson/", { params });
+    return { data: data.results ?? data };
   },
 
   /** Ranking sem geometria (mais leve) */

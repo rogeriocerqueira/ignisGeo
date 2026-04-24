@@ -23,6 +23,8 @@ class FocosGeoJSONView(generics.ListAPIView):
     Parâmetros: bioma, estado, data_inicio, data_fim, bbox
     """
     serializer_class = FocoQueimadaGeoSerializer
+    pagination_class = None  # ← adicione esta linha
+
 
     def get_queryset(self):
         qs = FocoQueimada.objects.all()
@@ -77,6 +79,8 @@ class FocosListView(generics.ListAPIView):
 
 class AreasRiscoGeoJSONView(generics.ListAPIView):
     serializer_class = AreaRiscoGeoSerializer
+    pagination_class = None  # ← adicione esta linha
+
 
     def get_queryset(self):
         qs = AreaRisco.objects.filter(geometria__isnull=False)  # ← esta linha

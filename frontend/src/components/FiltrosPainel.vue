@@ -118,11 +118,11 @@ const ufs = [
 
 function aplicar() {
   store.aplicarFiltros({
-    bioma: form.bioma,
-    estado: form.estado,
-    nivel_risco: form.nivelRisco,
-    data_inicio: form.dataInicio,
-    data_fim: form.dataFim,
+    bioma:      form.bioma,
+    estado:     form.estado,
+    nivelRisco: form.nivelRisco,
+    dataInicio: form.dataInicio,
+    dataFim:    form.dataFim,
   });
 }
 
