@@ -1,0 +1,40 @@
+// Mapeamento de biomas por estado brasileiro
+// Fonte: IBGE — cada estado pode ter múltiplos biomas
+export const BIOMAS_POR_ESTADO = {
+  AC: ["AMAZONIA"],
+  AL: ["CAATINGA", "MATA_ATLANTICA"],
+  AM: ["AMAZONIA"],
+  AP: ["AMAZONIA"],
+  BA: ["CAATINGA", "CERRADO", "MATA_ATLANTICA"],
+  CE: ["CAATINGA", "MATA_ATLANTICA"],
+  DF: ["CERRADO"],
+  ES: ["MATA_ATLANTICA", "CERRADO"],
+  GO: ["CERRADO", "AMAZONIA"],
+  MA: ["AMAZONIA", "CERRADO", "CAATINGA"],
+  MG: ["CERRADO", "MATA_ATLANTICA", "CAATINGA"],
+  MS: ["CERRADO", "PANTANAL", "MATA_ATLANTICA"],
+  MT: ["AMAZONIA", "CERRADO", "PANTANAL"],
+  PA: ["AMAZONIA", "CERRADO"],
+  PB: ["CAATINGA", "MATA_ATLANTICA"],
+  PE: ["CAATINGA", "MATA_ATLANTICA"],
+  PI: ["CAATINGA", "CERRADO"],
+  PR: ["MATA_ATLANTICA", "CERRADO"],
+  RJ: ["MATA_ATLANTICA"],
+  RN: ["CAATINGA", "MATA_ATLANTICA"],
+  RO: ["AMAZONIA", "CERRADO"],
+  RR: ["AMAZONIA"],
+  RS: ["PAMPA", "MATA_ATLANTICA"],
+  SC: ["MATA_ATLANTICA"],
+  SE: ["CAATINGA", "MATA_ATLANTICA"],
+  SP: ["MATA_ATLANTICA", "CERRADO"],
+  TO: ["CERRADO", "AMAZONIA"],
+};
+
+export const NOME_BIOMA = {
+  AMAZONIA:      "Amazônia",
+  CERRADO:       "Cerrado",
+  CAATINGA:      "Caatinga",
+  MATA_ATLANTICA:"Mata Atlântica",
+  PANTANAL:      "Pantanal",
+  PAMPA:         "Pampa",
+};

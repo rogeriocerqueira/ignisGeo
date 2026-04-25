@@ -4,6 +4,9 @@ from django.db.models import Avg, Count
 from rest_framework import generics, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+
 
 from .models import FocoQueimada, AreaRisco
 from .serializers import (
@@ -105,14 +108,17 @@ class RankingView(generics.ListAPIView):
     def get_queryset(self):
         return AreaRisco.objects.all().order_by("ranking")
 
-
+@csrf_exempt
 @api_view(["POST"])
 def calcular_topsis_view(request):
     """
     POST /api/calcular-topsis/
     Recalcula o TOPSIS Fuzzy para todas as áreas no período informado.
     Body: { "data_inicio": "2024-01-01", "data_fim": "2024-01-31" }
+
+    
     """
+    
     data_inicio_str = request.data.get("data_inicio")
     data_fim_str = request.data.get("data_fim")
 
@@ -211,7 +217,7 @@ def calcular_topsis_view(request):
         ],
     })
 
-
+@csrf_exempt
 @api_view(["POST"])
 def importar_csv_view(request):
     """
