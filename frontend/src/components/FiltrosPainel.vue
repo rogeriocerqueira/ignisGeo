@@ -2,30 +2,35 @@
   <aside class="filtros-painel">
     <h2 class="painel-titulo">Filtros</h2>
 
+    <!-- Estado -->
     <div class="campo">
-      <label>Bioma</label>
-      <select v-model="form.bioma">
-        <option value="">Todos</option>
-        <option value="AMAZONIA">Amazônia</option>
-        <option value="CERRADO">Cerrado</option>
-        <option value="CAATINGA">Caatinga</option>
-        <option value="MATA_ATLANTICA">Mata Atlântica</option>
-        <option value="PANTANAL">Pantanal</option>
-        <option value="PAMPA">Pampa</option>
-      </select>
-    </div>
-
-    <div class="campo">
-      <label>Estado (UF)</label>
-      <select v-model="form.estado">
+      <label :for="'estado'">Estado (UF)</label>
+      <select id="estado" v-model="form.estado" @change="onEstadoChange">
         <option value="">Todos</option>
         <option v-for="uf in ufs" :key="uf" :value="uf">{{ uf }}</option>
       </select>
     </div>
 
+    <!-- Bioma — filtra automaticamente pelo estado -->
     <div class="campo">
-      <label>Nível de risco</label>
-      <select v-model="form.nivelRisco">
+      <label :for="'bioma'">Bioma</label>
+      <select id="bioma" v-model="form.bioma">
+        <option value="">Todos</option>
+        <option
+          v-for="b in biomasDisponiveis"
+          :key="b.value"
+          :value="b.value"
+        >{{ b.label }}</option>
+      </select>
+      <span v-if="form.estado && biomasDisponiveis.length < 6" class="campo-dica">
+        Biomas de {{ form.estado }}
+      </span>
+    </div>
+
+    <!-- Nível de risco -->
+    <div class="campo">
+      <label :for="'nivel'">Nível de risco</label>
+      <select id="nivel" v-model="form.nivelRisco">
         <option value="">Todos</option>
         <option value="CRITICO">Crítico</option>
         <option value="ALTO">Alto</option>
@@ -34,14 +39,15 @@
       </select>
     </div>
 
+    <!-- Datas -->
     <div class="campo">
-      <label>Data início</label>
-      <input type="date" v-model="form.dataInicio" />
+      <label :for="'dt-ini'">Data início</label>
+      <input id="dt-ini" type="date" v-model="form.dataInicio" />
     </div>
 
     <div class="campo">
-      <label>Data fim</label>
-      <input type="date" v-model="form.dataFim" />
+      <label :for="'dt-fim'">Data fim</label>
+      <input id="dt-fim" type="date" v-model="form.dataFim" />
     </div>
 
     <div class="acoes">
@@ -49,21 +55,31 @@
       <button class="btn-limpar" @click="limpar">Limpar</button>
     </div>
 
+    <!-- Resumo dos filtros ativos -->
+    <div v-if="temFiltrosAtivos" class="filtros-ativos">
+      <span class="filtros-ativos-label">Filtros ativos</span>
+      <span v-if="form.estado" class="tag">{{ form.estado }}</span>
+      <span v-if="form.bioma" class="tag">{{ nomeBioma(form.bioma) }}</span>
+      <span v-if="form.nivelRisco" class="tag">{{ form.nivelRisco }}</span>
+      <span v-if="form.dataInicio" class="tag">De: {{ form.dataInicio }}</span>
+      <span v-if="form.dataFim" class="tag">Até: {{ form.dataFim }}</span>
+    </div>
+
     <hr class="divisor" />
 
-    <!-- Painel TOPSIS -->
+    <!-- TOPSIS -->
     <h2 class="painel-titulo">Calcular TOPSIS</h2>
     <p class="painel-desc">
       Recalcula o ranking de áreas prioritárias com TOPSIS Fuzzy.
     </p>
 
     <div class="campo">
-      <label>Período início</label>
-      <input type="date" v-model="topsis.inicio" />
+      <label :for="'tp-ini'">Período início</label>
+      <input id="tp-ini" type="date" v-model="topsis.inicio" />
     </div>
     <div class="campo">
-      <label>Período fim</label>
-      <input type="date" v-model="topsis.fim" />
+      <label :for="'tp-fim'">Período fim</label>
+      <input id="tp-fim" type="date" v-model="topsis.fim" />
     </div>
 
     <button
@@ -75,7 +91,7 @@
     </button>
 
     <div v-if="resultadoTopsis" class="resultado-topsis">
-      <p class="resultado-titulo">Cálculo concluído!</p>
+      <p class="resultado-titulo">✓ Cálculo concluído</p>
       <p>{{ resultadoTopsis.areas_atualizadas }} áreas atualizadas</p>
       <p class="resultado-sub">Top área de risco:</p>
       <p v-if="resultadoTopsis.top_5?.length" class="resultado-top">
@@ -84,31 +100,46 @@
       </p>
     </div>
 
-    <div v-if="store.erro" class="erro">{{ store.erro }}</div>
+    <div v-if="erroLocal" class="erro">{{ erroLocal }}</div>
+    <div v-else-if="store.erro" class="erro">{{ store.erro }}</div>
   </aside>
 </template>
 
 <script setup>
-import { ref, reactive } from "vue";
+import { ref, reactive, computed } from "vue";
 import { useQueimadasStore } from "@/stores/queimadas";
+import { BIOMAS_POR_ESTADO, NOME_BIOMA } from "@/biomas";
 
 const store = useQueimadasStore();
 
 const form = reactive({
-  bioma: "",
-  estado: "",
+  estado:     "",
+  bioma:      "",
   nivelRisco: "",
   dataInicio: "",
-  dataFim: "",
+  dataFim:    "",
 });
 
 const topsis = reactive({
-  inicio: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-    .toISOString().split("T")[0],
-  fim: new Date().toISOString().split("T")[0],
+  inicio: "2026-02-01",
+  fim:    "2026-04-21",
 });
 
 const resultadoTopsis = ref(null);
+const erroLocal       = ref(null);
+
+// Biomas disponíveis — todos, ou filtrados pelo estado
+const TODOS_BIOMAS = Object.entries(NOME_BIOMA).map(([value, label]) => ({ value, label }));
+
+const biomasDisponiveis = computed(() => {
+  if (!form.estado) return TODOS_BIOMAS;
+  const lista = BIOMAS_POR_ESTADO[form.estado] ?? [];
+  return TODOS_BIOMAS.filter((b) => lista.includes(b.value));
+});
+
+const temFiltrosAtivos = computed(() =>
+  form.estado || form.bioma || form.nivelRisco || form.dataInicio || form.dataFim
+);
 
 const ufs = [
   "AC","AL","AM","AP","BA","CE","DF","ES","GO","MA",
@@ -116,7 +147,21 @@ const ufs = [
   "RO","RR","RS","SC","SE","SP","TO",
 ];
 
+function nomeBioma(key) {
+  return NOME_BIOMA[key] ?? key;
+}
+
+// Ao trocar estado, reseta o bioma se não for compatível
+function onEstadoChange() {
+  if (!form.estado) return;
+  const lista = BIOMAS_POR_ESTADO[form.estado] ?? [];
+  if (form.bioma && !lista.includes(form.bioma)) {
+    form.bioma = "";
+  }
+}
+
 function aplicar() {
+  erroLocal.value = null;
   store.aplicarFiltros({
     bioma:      form.bioma,
     estado:     form.estado,
@@ -127,16 +172,34 @@ function aplicar() {
 }
 
 function limpar() {
-  Object.assign(form, { bioma:"", estado:"", nivelRisco:"", dataInicio:"", dataFim:"" });
+  Object.assign(form, {
+    estado: "", bioma: "", nivelRisco: "", dataInicio: "", dataFim: "",
+  });
+  erroLocal.value    = null;
+  resultadoTopsis.value = null;
   store.limparFiltros();
 }
 
 async function executarTopsis() {
   resultadoTopsis.value = null;
+  erroLocal.value = null;
+
+  if (!topsis.inicio || !topsis.fim) {
+    erroLocal.value = "Informe o período de início e fim.";
+    return;
+  }
+
+  if (topsis.inicio > topsis.fim) {
+    erroLocal.value = "A data de início deve ser anterior à data fim.";
+    return;
+  }
+
   try {
     const resultado = await store.executarTopsis(topsis.inicio, topsis.fim);
     resultadoTopsis.value = resultado;
-  } catch (_) {}
+  } catch {
+    erroLocal.value = "Erro ao calcular TOPSIS. Verifique se há dados no período.";
+  }
 }
 </script>
 
@@ -182,6 +245,12 @@ async function executarTopsis() {
   color: #6b7280;
 }
 
+.campo-dica {
+  font-size: 11px;
+  color: #3b82f6;
+  font-style: italic;
+}
+
 .campo select,
 .campo input[type="date"] {
   border: 1px solid #d1d5db;
@@ -203,7 +272,7 @@ async function executarTopsis() {
 .acoes {
   display: flex;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .btn-aplicar {
@@ -230,6 +299,30 @@ async function executarTopsis() {
   cursor: pointer;
 }
 .btn-limpar:hover { background: #f3f4f6; }
+
+/* Filtros ativos */
+.filtros-ativos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 12px;
+  align-items: center;
+}
+.filtros-ativos-label {
+  font-size: 10px;
+  color: #9ca3af;
+  font-weight: 500;
+  text-transform: uppercase;
+  width: 100%;
+}
+.tag {
+  font-size: 11px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
 
 .divisor {
   border: none;
@@ -260,6 +353,7 @@ async function executarTopsis() {
   padding: 10px 12px;
   font-size: 12px;
   color: #065f46;
+  margin-bottom: 8px;
 }
 .resultado-titulo { font-weight: 600; margin-bottom: 4px; }
 .resultado-sub { margin-top: 6px; font-weight: 500; }
