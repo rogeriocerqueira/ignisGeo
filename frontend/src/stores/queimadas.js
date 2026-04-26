@@ -73,18 +73,18 @@ export const useQueimadasStore = defineStore("queimadas", () => {
     }
   }
 
-  async function carregarRanking() {
-    _inc();
-    erros.value.ranking = null;
-    try {
-      const { data } = await areasApi.getRanking();
-      ranking.value = data.results ?? data;
-    } catch {
-      erros.value.ranking = "Erro ao carregar ranking.";
-    } finally {
-      _dec();
-    }
+async function carregarRanking() {
+  _inc();
+  erros.value.ranking = null;
+  try {
+    const { data } = await areasApi.getRanking(filtrosAtivos()); // ← passa filtros
+    ranking.value = data.results ?? data;
+  } catch {
+    erros.value.ranking = "Erro ao carregar ranking.";
+  } finally {
+    _dec();
   }
+}
 
 async function carregarEstatisticas() {
   _inc();
@@ -124,21 +124,21 @@ async function executarTopsis(dataInicio = null, dataFim = null, estado = null, 
   }
 }
 
-  function aplicarFiltros(novosFiltros) {
-    filtros.value = { ...filtros.value, ...novosFiltros };
-    carregarFocosGeoJSON();
-    carregarAreasRisco();
-    carregarEstatisticas();  // adicionado
+function aplicarFiltros(novosFiltros) {
+  filtros.value = { ...filtros.value, ...novosFiltros };
+  carregarFocosGeoJSON();
+  carregarAreasRisco();
+  carregarRanking();       // ← adicionado
+  carregarEstatisticas();
+}
 
-  }
-
-  function limparFiltros() {
-    filtros.value = { bioma: "", estado: "", dataInicio: "", dataFim: "", nivelRisco: "" };
-    carregarFocosGeoJSON();
-    carregarAreasRisco();
-    carregarEstatisticas();  // adicionado
-
-  }
+function limparFiltros() {
+  filtros.value = { bioma: "", estado: "", dataInicio: "", dataFim: "", nivelRisco: "" };
+  carregarFocosGeoJSON();
+  carregarAreasRisco();
+  carregarRanking();       // ← adicionado
+  carregarEstatisticas();
+}
 
   async function inicializar() {
     await Promise.all([
