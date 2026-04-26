@@ -27,10 +27,6 @@ export const areasApi = {
 };
 
 export const analiseApi = {
-  /**
-   * Dispara o cálculo TOPSIS Fuzzy com os filtros ativos.
-   * payload pode conter: data_inicio, data_fim, estado, bioma (todos opcionais)
-   */
   calcularTopsis(payload = {}) {
     return api.post("/calcular-topsis/", payload);
   },
@@ -39,8 +35,8 @@ export const analiseApi = {
     return api.post("/importar-csv/", { caminho });
   },
 
-  getEstatisticas() {
-    return api.get("/estatisticas/");
+  getEstatisticas(params = {}) {       // ← vírgula depois de importarCSV
+    return api.get("/estatisticas/", { params });
   },
 };
 

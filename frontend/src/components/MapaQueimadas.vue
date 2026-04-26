@@ -50,24 +50,24 @@ let camadaAreas   = null;
 const camadaAtiva = ref("focos");
 
 const legendaItens = [
-  { cor: "#b91c1c", label: "Crítico (≥ 0.75)" },
-  { cor: "#ea580c", label: "Alto (0.55 – 0.75)" },
-  { cor: "#ca8a04", label: "Médio (0.35 – 0.55)" },
-  { cor: "#16a34a", label: "Baixo (< 0.35)" },
+  { cor: "#b91c1c", label: "Crítico (≥ 0.45)" },
+  { cor: "#c2410c", label: "Alto (0.35 – 0.45)" },
+  { cor: "#f97316", label: "Médio (0.25 – 0.35)" },
+  { cor: "#16a34a", label: "Baixo (< 0.25)" },
 ];
 
 const corPorNivel = {
-  CRITICO: "#b91c1c",
-  ALTO:    "#ea580c",
-  MEDIO:   "#ca8a04",
-  BAIXO:   "#16a34a",
+  CRITICO: "#b91c1c",  // vermelho — mantém
+  ALTO:    "#c2410c",  // laranja escuro
+  MEDIO:   "#f97316",  // laranja padrão
+  BAIXO:   "#16a34a",  // verde — mantém
 };
 
 function corFoco(frp) {
-  if (frp >= 200) return "#7c2d12";
-  if (frp >= 100) return "#b91c1c";
-  if (frp >= 50)  return "#ea580c";
-  return "#f97316";
+  if (frp >= 200) return "#7c2d12";  // marrom escuro (muito intenso)
+  if (frp >= 100) return "#b91c1c";  // vermelho (intenso)
+  if (frp >= 50)  return "#ea580c";  // laranja escuro
+  return "#f97316";                   // laranja padrão
 }
 
 function fitFocos() {
