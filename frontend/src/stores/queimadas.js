@@ -86,17 +86,17 @@ export const useQueimadasStore = defineStore("queimadas", () => {
     }
   }
 
-  async function carregarEstatisticas() {
-    _inc();
-    try {
-      const { data } = await analiseApi.getEstatisticas();
-      estatisticas.value = data;
-    } catch (e) {
-      console.error("Erro ao carregar estatísticas:", e);
-    } finally {
-      _dec();
-    }
+async function carregarEstatisticas() {
+  _inc();
+  try {
+    const { data } = await analiseApi.getEstatisticas(filtrosAtivos()); // ← passa filtros
+    estatisticas.value = data;
+  } catch (e) {
+    console.error("Erro ao carregar estatísticas:", e);
+  } finally {
+    _dec();
   }
+}
 
 async function executarTopsis(dataInicio = null, dataFim = null, estado = null, bioma = null) {
   _inc();
@@ -128,12 +128,16 @@ async function executarTopsis(dataInicio = null, dataFim = null, estado = null, 
     filtros.value = { ...filtros.value, ...novosFiltros };
     carregarFocosGeoJSON();
     carregarAreasRisco();
+    carregarEstatisticas();  // adicionado
+
   }
 
   function limparFiltros() {
     filtros.value = { bioma: "", estado: "", dataInicio: "", dataFim: "", nivelRisco: "" };
     carregarFocosGeoJSON();
     carregarAreasRisco();
+    carregarEstatisticas();  // adicionado
+
   }
 
   async function inicializar() {

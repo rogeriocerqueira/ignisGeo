@@ -232,9 +232,19 @@ def importar_csv_view(request):
 
 @api_view(["GET"])
 def estatisticas_view(request):
-    total_focos = FocoQueimada.objects.count()
+    qs = FocoQueimada.objects.all()
+    bioma       = request.query_params.get("bioma")
+    estado      = request.query_params.get("estado")
+    data_inicio = request.query_params.get("data_inicio")
+    data_fim    = request.query_params.get("data_fim")
+    if bioma:       qs = qs.filter(bioma=bioma)
+    if estado:      qs = qs.filter(estado=estado.upper())
+    if data_inicio: qs = qs.filter(data_hora__date__gte=data_inicio)
+    if data_fim:    qs = qs.filter(data_hora__date__lte=data_fim)
+
+    total_focos = qs.count()                          # ← usa qs filtrado
     por_bioma = (
-        FocoQueimada.objects
+        qs                                            # ← usa qs filtrado
         .values("bioma")
         .annotate(total=Count("id"), frp_media=Avg("frp"))
         .order_by("-total")
