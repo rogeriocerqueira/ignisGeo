@@ -83,8 +83,14 @@ class RankingView(generics.ListAPIView):
     serializer_class = AreaRiscoRankingSerializer
 
     def get_queryset(self):
-        return AreaRisco.objects.all().order_by("ranking")
-
+        qs = AreaRisco.objects.all()
+        nivel  = self.request.query_params.get("nivel_risco")
+        estado = self.request.query_params.get("estado")
+        bioma  = self.request.query_params.get("bioma")
+        if nivel:  qs = qs.filter(nivel_risco=nivel.upper())
+        if estado: qs = qs.filter(estado=estado.upper())
+        if bioma:  qs = qs.filter(bioma=bioma)
+        return qs.order_by("ranking")
 
 @csrf_exempt
 @api_view(["POST"])
