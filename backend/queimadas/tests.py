@@ -155,23 +155,23 @@ class NormalizarFuzzyTest(TestCase):
 class ClassificarNivelTest(TestCase):
 
     def test_critico(self):
-        self.assertEqual(classificar_nivel(0.75), "CRITICO")
+        self.assertEqual(classificar_nivel(0.45), "CRITICO")
         self.assertEqual(classificar_nivel(1.00), "CRITICO")
-        self.assertEqual(classificar_nivel(0.90), "CRITICO")
+        self.assertEqual(classificar_nivel(0.55), "CRITICO")
 
     def test_alto(self):
-        self.assertEqual(classificar_nivel(0.55), "ALTO")
-        self.assertEqual(classificar_nivel(0.74), "ALTO")
+        self.assertEqual(classificar_nivel(0.35), "ALTO")
+        self.assertEqual(classificar_nivel(0.44), "ALTO")
 
     def test_medio(self):
-        self.assertEqual(classificar_nivel(0.35), "MEDIO")
-        self.assertEqual(classificar_nivel(0.54), "MEDIO")
+        self.assertEqual(classificar_nivel(0.25), "MEDIO")
+        self.assertEqual(classificar_nivel(0.34), "MEDIO")
 
     def test_baixo(self):
         self.assertEqual(classificar_nivel(0.00), "BAIXO")
-        self.assertEqual(classificar_nivel(0.34), "BAIXO")
+        self.assertEqual(classificar_nivel(0.24), "BAIXO")
 
-
+        
 # ══════════════════════════════════════════════
 # 4. calcular_topsis_fuzzy
 # ══════════════════════════════════════════════

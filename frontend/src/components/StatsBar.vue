@@ -8,6 +8,8 @@
     <div class="card card-critico">
       <span class="card-label">Áreas críticas</span>
       <span class="card-valor">{{ store.areasCriticas }}</span>
+      <span class="card-sub">score ≥ 0.45</span>
+
     </div>
 
     <div

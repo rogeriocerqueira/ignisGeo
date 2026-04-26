@@ -109,11 +109,12 @@ async function executarTopsis(dataInicio = null, dataFim = null, estado = null, 
     if (bioma)      payload.bioma       = bioma;
 
     const { data } = await analiseApi.calcularTopsis(payload);
-    
-    // Aguarda o backend terminar de salvar antes de recarregar
-    await new Promise(resolve => setTimeout(resolve, 500));
-    await carregarRanking();
-    await carregarAreasRisco();
+    // Recarrega tudo incluindo estatísticas
+    await Promise.all([
+      carregarAreasRisco(),
+      carregarRanking(),
+      carregarEstatisticas(),  // ← adicione esta linha
+    ]);
     return data;
   } catch (e) {
     erros.value.topsis = "Erro ao calcular TOPSIS Fuzzy.";

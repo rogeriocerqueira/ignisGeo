@@ -181,12 +181,16 @@ def calcular_topsis_fuzzy(
 
 
 def classificar_nivel(score: float) -> str:
-    """Classifica o nível de risco com base no score TOPSIS."""
-    if score >= 0.75:
+    """
+    Classifica o nível de risco com base no score TOPSIS.
+    Thresholds calibrados empiricamente — NDVI ausente nos dados INPE
+    comprime o score máximo para ~0.55, portanto os limiares são ajustados.
+    """
+    if score >= 0.45:
         return "CRITICO"
-    elif score >= 0.55:
-        return "ALTO"
     elif score >= 0.35:
+        return "ALTO"
+    elif score >= 0.25:
         return "MEDIO"
     else:
         return "BAIXO"
