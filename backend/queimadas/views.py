@@ -5,8 +5,6 @@ from rest_framework import generics, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
-
 
 from .models import FocoQueimada, AreaRisco
 from .serializers import (
@@ -20,35 +18,23 @@ from .tasks import importar_csv_inpe
 
 
 class FocosGeoJSONView(generics.ListAPIView):
-    """
-    GET /api/focos/geojson/
-    Retorna focos como GeoJSON FeatureCollection para renderizar no Leaflet.
-    Parâmetros: bioma, estado, data_inicio, data_fim, bbox
-    """
     serializer_class = FocoQueimadaGeoSerializer
-    pagination_class = None  # ← adicione esta linha
-
+    pagination_class = None
 
     def get_queryset(self):
         qs = FocoQueimada.objects.all()
-
         bioma = self.request.query_params.get("bioma")
         if bioma:
             qs = qs.filter(bioma=bioma)
-
         estado = self.request.query_params.get("estado")
         if estado:
             qs = qs.filter(estado=estado.upper())
-
         data_inicio = self.request.query_params.get("data_inicio")
         if data_inicio:
             qs = qs.filter(data_hora__date__gte=data_inicio)
-
         data_fim = self.request.query_params.get("data_fim")
         if data_fim:
             qs = qs.filter(data_hora__date__lte=data_fim)
-
-        # Filtro por bounding box: bbox=lon_min,lat_min,lon_max,lat_max
         bbox = self.request.query_params.get("bbox")
         if bbox:
             try:
@@ -58,15 +44,10 @@ class FocosGeoJSONView(generics.ListAPIView):
                     qs = qs.filter(localizacao__within=poligono)
             except (ValueError, TypeError):
                 pass
-
         return qs.order_by("-data_hora")[:5000]
 
 
 class FocosListView(generics.ListAPIView):
-    """
-    GET /api/focos/
-    Lista simplificada (sem geometria) para tabelas e gráficos.
-    """
     serializer_class = FocoQueimadaListSerializer
 
     def get_queryset(self):
@@ -82,11 +63,10 @@ class FocosListView(generics.ListAPIView):
 
 class AreasRiscoGeoJSONView(generics.ListAPIView):
     serializer_class = AreaRiscoGeoSerializer
-    pagination_class = None  # ← adicione esta linha
-
+    pagination_class = None
 
     def get_queryset(self):
-        qs = AreaRisco.objects.filter(geometria__isnull=False)  # ← esta linha
+        qs = AreaRisco.objects.filter(geometria__isnull=False)
         nivel = self.request.query_params.get("nivel_risco")
         if nivel:
             qs = qs.filter(nivel_risco=nivel.upper())
@@ -98,50 +78,63 @@ class AreasRiscoGeoJSONView(generics.ListAPIView):
             qs = qs.filter(estado=estado.upper())
         return qs.order_by("ranking")
 
+
 class RankingView(generics.ListAPIView):
-    """
-    GET /api/ranking/
-    Ranking completo das áreas por score TOPSIS (sem geometria, resposta leve).
-    """
     serializer_class = AreaRiscoRankingSerializer
 
     def get_queryset(self):
         return AreaRisco.objects.all().order_by("ranking")
+
 
 @csrf_exempt
 @api_view(["POST"])
 def calcular_topsis_view(request):
     """
     POST /api/calcular-topsis/
-    Recalcula o TOPSIS Fuzzy para todas as áreas no período informado.
-    Body: { "data_inicio": "2024-01-01", "data_fim": "2024-01-31" }
-
-    
+    Recalcula o TOPSIS Fuzzy respeitando os filtros ativos.
+    Body (todos opcionais): data_inicio, data_fim, estado, bioma
     """
-    
     data_inicio_str = request.data.get("data_inicio")
-    data_fim_str = request.data.get("data_fim")
+    data_fim_str    = request.data.get("data_fim")
+    estado_filtro   = request.data.get("estado")
+    bioma_filtro    = request.data.get("bioma")
 
-    if not data_inicio_str or not data_fim_str:
-        # Padrão: últimos 30 dias
-        data_fim = date.today()
-        data_inicio = data_fim - timedelta(days=30)
-    else:
+    if data_inicio_str:
         try:
             from datetime import datetime
             data_inicio = datetime.strptime(data_inicio_str, "%Y-%m-%d").date()
+        except ValueError:
+            return Response(
+                {"erro": "Formato de data inválido. Use YYYY-MM-DD."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    else:
+        data_inicio = None
+
+    if data_fim_str:
+        try:
+            from datetime import datetime
             data_fim = datetime.strptime(data_fim_str, "%Y-%m-%d").date()
         except ValueError:
             return Response(
                 {"erro": "Formato de data inválido. Use YYYY-MM-DD."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+    else:
+        data_fim = None
 
-    # Agrega métricas por município para alimentar o TOPSIS
+    qs = FocoQueimada.objects.all()
+    if data_inicio:
+        qs = qs.filter(data_hora__date__gte=data_inicio)
+    if data_fim:
+        qs = qs.filter(data_hora__date__lte=data_fim)
+    if estado_filtro:
+        qs = qs.filter(estado=estado_filtro.upper())
+    if bioma_filtro:
+        qs = qs.filter(bioma=bioma_filtro)
+
     metricas = (
-        FocoQueimada.objects
-        .filter(data_hora__date__gte=data_inicio, data_hora__date__lte=data_fim)
-        .values("municipio", "estado", "bioma")
+        qs.values("municipio", "estado", "bioma")
         .annotate(
             total_focos=Count("id"),
             frp_media=Avg("frp"),
@@ -154,92 +147,91 @@ def calcular_topsis_view(request):
 
     if not metricas:
         return Response(
-            {"mensagem": "Nenhum foco encontrado no período."},
+            {"mensagem": "Nenhum foco encontrado com os filtros aplicados."},
             status=status.HTTP_200_OK,
         )
 
     alternativas = [
         {
-            "nome": f"{m['municipio']}/{m['estado']}",
-            "municipio": m["municipio"],
-            "estado": m["estado"],
-            "bioma": m["bioma"],
-            "total_focos": m["total_focos"] or 0,
-            "frp_media": m["frp_media"] or 0.0,
+            "nome":                  f"{m['municipio']}/{m['estado']}",
+            "municipio":             m["municipio"],
+            "estado":                m["estado"],
+            "bioma":                 m["bioma"],
+            "total_focos":           m["total_focos"] or 0,
+            "frp_media":             m["frp_media"] or 0.0,
             "risco_historico_medio": m["risco_historico_medio"] or 0.0,
-            "vento_medio": m["vento_medio"] or 0.0,
-            "ndvi_medio": m["ndvi_medio"] or 0.0,
+            "vento_medio":           m["vento_medio"] or 0.0,
+            "ndvi_medio":            m["ndvi_medio"] or 0.0,
         }
         for m in metricas
     ]
 
     resultado = calcular_topsis_fuzzy(alternativas)
 
-    # Persiste os resultados (sem geometria — adicionar geometria via shapefile)
-    AreaRisco.objects.filter(
-        periodo_inicio=data_inicio, periodo_fim=data_fim
-    ).delete()
+    # Usa datas reais do banco quando não informado
+    if not data_inicio or not data_fim:
+        primeiro = FocoQueimada.objects.order_by("data_hora").first()
+        ultimo   = FocoQueimada.objects.order_by("-data_hora").first()
+        data_inicio = data_inicio or (primeiro.data_hora.date() if primeiro else date.today())
+        data_fim    = data_fim    or (ultimo.data_hora.date()   if ultimo   else date.today())
 
-    areas_criadas = 0
-    for item in resultado:
-        AreaRisco.objects.update_or_create(
+    # Limpa tudo e salva com bulk_create
+    AreaRisco.objects.all().delete()
+
+    novas_areas = [
+        AreaRisco(
             nome=item["nome"],
-            defaults={
-                "estado":                item["estado"],
-                "bioma":                 item["bioma"],
-                "geometria":             None,
-                "score_topsis":          item["score_topsis"],
-                "ranking":               item["ranking"],
-                "nivel_risco":           item["nivel_risco"],
-                "total_focos":           item["total_focos"],
-                "frp_media":             item["frp_media"],
-                "risco_historico_medio": item["risco_historico_medio"],
-                "vento_medio":           item["vento_medio"],
-                "ndvi_medio":            item["ndvi_medio"],
-                "periodo_inicio":        data_inicio,
-                "periodo_fim":           data_fim,
-            },
+            estado=item["estado"],
+            bioma=item["bioma"],
+            geometria=None,
+            score_topsis=item["score_topsis"],
+            ranking=item["ranking"],
+            nivel_risco=item["nivel_risco"],
+            total_focos=item["total_focos"],
+            frp_media=item["frp_media"],
+            risco_historico_medio=item["risco_historico_medio"],
+            vento_medio=item["vento_medio"],
+            ndvi_medio=item["ndvi_medio"],
+            periodo_inicio=data_inicio,
+            periodo_fim=data_fim,
         )
-        areas_criadas += 1
+        for item in resultado
+    ]
+
+    AreaRisco.objects.bulk_create(novas_areas)
+    areas_criadas = len(novas_areas)
 
     return Response({
-        "mensagem": f"TOPSIS Fuzzy calculado para {len(resultado)} áreas.",
-        "periodo": {"inicio": str(data_inicio), "fim": str(data_fim)},
+        "mensagem":          f"TOPSIS Fuzzy calculado para {len(resultado)} áreas.",
+        "periodo":           {"inicio": str(data_inicio), "fim": str(data_fim)},
+        "filtros":           {"estado": estado_filtro or "Todos", "bioma": bioma_filtro or "Todos"},
         "areas_atualizadas": areas_criadas,
         "top_5": [
             {
-                "nome": r["nome"],
+                "nome":         r["nome"],
                 "score_topsis": r["score_topsis"],
-                "nivel_risco": r["nivel_risco"],
-                "ranking": r["ranking"],
+                "nivel_risco":  r["nivel_risco"],
+                "ranking":      r["ranking"],
             }
             for r in resultado[:5]
         ],
     })
 
+
 @csrf_exempt
 @api_view(["POST"])
 def importar_csv_view(request):
-    """
-    POST /api/importar-csv/
-    Dispara o job Celery de importação de CSV do INPE.
-    Body: { "caminho": "/app/data/focos_mensal.csv" }
-    """
     caminho = request.data.get("caminho", "/app/data/focos_mensal.csv")
     task = importar_csv_inpe.delay(caminho)
     return Response({
         "mensagem": "Importação iniciada.",
-        "task_id": task.id,
-        "caminho": caminho,
+        "task_id":  task.id,
+        "caminho":  caminho,
     })
 
 
 @api_view(["GET"])
 def estatisticas_view(request):
-    """
-    GET /api/estatisticas/
-    Resumo geral para o dashboard.
-    """
     total_focos = FocoQueimada.objects.count()
     por_bioma = (
         FocoQueimada.objects
@@ -248,11 +240,11 @@ def estatisticas_view(request):
         .order_by("-total")
     )
     areas_criticas = AreaRisco.objects.filter(nivel_risco="CRITICO").count()
-    areas_alto = AreaRisco.objects.filter(nivel_risco="ALTO").count()
+    areas_alto     = AreaRisco.objects.filter(nivel_risco="ALTO").count()
 
     return Response({
-        "total_focos": total_focos,
-        "areas_criticas": areas_criticas,
+        "total_focos":      total_focos,
+        "areas_criticas":   areas_criticas,
         "areas_alto_risco": areas_alto,
-        "por_bioma": list(por_bioma),
+        "por_bioma":        list(por_bioma),
     })

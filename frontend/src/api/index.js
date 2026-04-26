@@ -9,11 +9,8 @@ const api = axios.create({
 export const focosApi = {
   async getGeoJSON(params = {}) {
     const { data } = await api.get("/focos/geojson/", { params });
-    // API retorna { count, results: FeatureCollection } com paginação
     return { data: data.results ?? data };
   },
-
-  /** Lista simplificada para tabelas */
   getLista(params = {}) {
     return api.get("/focos/", { params });
   },
@@ -24,28 +21,24 @@ export const areasApi = {
     const { data } = await api.get("/areas-risco/geojson/", { params });
     return { data: data.results ?? data };
   },
-
-  /** Ranking sem geometria (mais leve) */
   getRanking(params = {}) {
     return api.get("/ranking/", { params });
   },
 };
 
 export const analiseApi = {
-  /** Dispara o cálculo TOPSIS Fuzzy no servidor */
-  calcularTopsis(dataInicio, dataFim) {
-    return api.post("/calcular-topsis/", {
-      data_inicio: dataInicio,
-      data_fim: dataFim,
-    });
+  /**
+   * Dispara o cálculo TOPSIS Fuzzy com os filtros ativos.
+   * payload pode conter: data_inicio, data_fim, estado, bioma (todos opcionais)
+   */
+  calcularTopsis(payload = {}) {
+    return api.post("/calcular-topsis/", payload);
   },
 
-  /** Dispara importação de CSV do INPE via Celery */
   importarCSV(caminho) {
     return api.post("/importar-csv/", { caminho });
   },
 
-  /** Estatísticas gerais para o dashboard */
   getEstatisticas() {
     return api.get("/estatisticas/");
   },

@@ -3,27 +3,19 @@ import { ref, computed } from "vue";
 import { focosApi, areasApi, analiseApi } from "@/api";
 
 export const useQueimadasStore = defineStore("queimadas", () => {
-  // --- Estado ---
   const focosGeoJSON  = ref(null);
   const areasGeoJSON  = ref(null);
   const ranking       = ref([]);
   const estatisticas  = ref(null);
 
-  // Contador de requests em andamento — evita race condition no loading
   const _carregandoCount = ref(0);
   const carregando = computed(() => _carregandoCount.value > 0);
 
-  // Erros por contexto — não se sobrescrevem
   const erros = ref({ focos: null, areas: null, ranking: null, topsis: null });
   const erro  = computed(() =>
-    erros.value.topsis
-    ?? erros.value.focos
-    ?? erros.value.areas
-    ?? erros.value.ranking
-    ?? null
+    erros.value.topsis ?? erros.value.focos ?? erros.value.areas ?? erros.value.ranking ?? null
   );
 
-  // Filtros — SEMPRE camelCase internamente
   const filtros = ref({
     bioma:      "",
     estado:     "",
@@ -32,20 +24,14 @@ export const useQueimadasStore = defineStore("queimadas", () => {
     nivelRisco: "",
   });
 
-  // --- Getters ---
   const totalFocos    = computed(() => estatisticas.value?.total_focos    ?? 0);
   const areasCriticas = computed(() => estatisticas.value?.areas_criticas ?? 0);
   const porBioma      = computed(() => estatisticas.value?.por_bioma      ?? []);
   const rankingTop10  = computed(() => ranking.value.slice(0, 10));
 
-  // --- Helpers ---
   function _inc() { _carregandoCount.value++; }
   function _dec() { _carregandoCount.value = Math.max(0, _carregandoCount.value - 1); }
 
-  /**
-   * Converte filtros camelCase internos para snake_case para a API.
-   * Remove entradas vazias.
-   */
   function filtrosAtivos() {
     const mapa = {
       bioma:      "bioma",
@@ -61,7 +47,6 @@ export const useQueimadasStore = defineStore("queimadas", () => {
     );
   }
 
-  // --- Actions ---
   async function carregarFocosGeoJSON() {
     _inc();
     erros.value.focos = null;
@@ -113,26 +98,31 @@ export const useQueimadasStore = defineStore("queimadas", () => {
     }
   }
 
-  async function executarTopsis(dataInicio, dataFim) {
-    _inc();
-    erros.value.topsis = null;
-    try {
-      const { data } = await analiseApi.calcularTopsis(dataInicio, dataFim);
-      // Recarrega áreas e ranking após o cálculo
-      await Promise.all([carregarAreasRisco(), carregarRanking()]);
-      return data;
-    } catch (e) {
-      erros.value.topsis = "Erro ao calcular TOPSIS Fuzzy.";
-      throw e;
-    } finally {
-      _dec();
-    }
-  }
+async function executarTopsis(dataInicio = null, dataFim = null, estado = null, bioma = null) {
+  _inc();
+  erros.value.topsis = null;
+  try {
+    const payload = {};
+    if (dataInicio) payload.data_inicio = dataInicio;
+    if (dataFim)    payload.data_fim    = dataFim;
+    if (estado)     payload.estado      = estado;
+    if (bioma)      payload.bioma       = bioma;
 
-  /**
-   * Aplica filtros — sempre recebe chaves camelCase.
-   * FiltrosPainel.vue deve passar: { bioma, estado, nivelRisco, dataInicio, dataFim }
-   */
+    const { data } = await analiseApi.calcularTopsis(payload);
+    
+    // Aguarda o backend terminar de salvar antes de recarregar
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await carregarRanking();
+    await carregarAreasRisco();
+    return data;
+  } catch (e) {
+    erros.value.topsis = "Erro ao calcular TOPSIS Fuzzy.";
+    throw e;
+  } finally {
+    _dec();
+  }
+}
+
   function aplicarFiltros(novosFiltros) {
     filtros.value = { ...filtros.value, ...novosFiltros };
     carregarFocosGeoJSON();
@@ -155,12 +145,9 @@ export const useQueimadasStore = defineStore("queimadas", () => {
   }
 
   return {
-    // Estado
     focosGeoJSON, areasGeoJSON, ranking, estatisticas,
     carregando, erro, erros, filtros,
-    // Getters
     totalFocos, areasCriticas, porBioma, rankingTop10,
-    // Actions
     carregarFocosGeoJSON, carregarAreasRisco,
     carregarRanking, carregarEstatisticas,
     executarTopsis, aplicarFiltros, limparFiltros, inicializar,
