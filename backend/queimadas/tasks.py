@@ -9,17 +9,72 @@ from .models import FocoQueimada
 
 logger = logging.getLogger(__name__)
 
+# Mapeamento nome completo do estado → UF (formato do INPE BDQueimadas)
+ESTADOS_PARA_UF = {
+    "ACRE":                 "AC",
+    "ALAGOAS":              "AL",
+    "AMAPA":                "AP",
+    "AMAZONAS":             "AM",
+    "BAHIA":                "BA",
+    "CEARA":                "CE",
+    "DISTRITO FEDERAL":     "DF",
+    "ESPÍRITO SANTO":       "ES",
+    "GOIAS":                "GO",
+    "MARANHÃO":             "MA",
+    "MATO GROSSO":          "MT",
+    "MATO GROSSO DO SUL":   "MS",
+    "MINAS GERAIS":         "MG",
+    "PARÁ":                 "PA",
+    "PARA":                 "PA",
+    "PARAÍBA":              "PB",
+    "PARAIBA":              "PB",
+    "PARÁ":                 "PA",
+    "PARANÁ":               "PR",
+    "PERNAMBUCO":           "PE",
+    "PIAUI":                "PI",
+    "RIO DE JANEIRO":       "RJ",
+    "RIO GRANDE DO NORTE":  "RN",
+    "RIO GRANDE DO SUL":    "RS",
+    "RONDÔNIA":             "RO",
+    "RONDONIA":             "RO",
+    "RORAIMA":              "RR",
+    "SANTA CATARINA":       "SC",
+    "SÃO PAULO":            "SP",
+    "SERGIPE":              "SE",
+    "TOCANTINS":            "TO",
+}
+
 # Mapeamento de biomas do CSV do INPE para os choices do model
 MAPA_BIOMAS = {
-    "amazônia":       "AMAZONIA",
     "amazonia":       "AMAZONIA",
     "cerrado":        "CERRADO",
     "caatinga":       "CAATINGA",
     "mata atlântica": "MATA_ATLANTICA",
-    "mata atlantica": "MATA_ATLANTICA",
     "pantanal":       "PANTANAL",
     "pampa":          "PAMPA",
 }
+
+
+def normalizar_estado(valor: str) -> str:
+    """
+    Converte nome completo do estado para UF de 2 letras.
+    Aceita tanto UF direta ('MG') quanto nome completo ('MINAS GERAIS').
+    """
+    valor = valor.strip().upper()
+
+    # Já é uma UF válida de 2 letras
+    if len(valor) == 2 and valor in ESTADOS_PARA_UF.values():
+        return valor
+
+    # Tenta mapear pelo nome completo
+    uf = ESTADOS_PARA_UF.get(valor)
+    if uf:
+        return uf
+
+    # Fallback: primeiros 2 caracteres
+    logger.warning(f"Estado não mapeado: '{valor}' — usando [:2]")
+    return valor[:2]
+
 
 def normalizar_bioma(valor: str) -> str:
     return MAPA_BIOMAS.get(valor.strip().lower(), "CERRADO")
@@ -29,15 +84,14 @@ def parse_linha(linha: dict) -> dict | None:
     """
     Converte uma linha do CSV do INPE BDQueimadas para o formato do model.
 
-    Colunas esperadas:
+    Colunas:
       DataHora, Satelite, Pais, Estado, Municipio, Bioma,
       DiaSemChuva, Precipitacao, RiscoFogo, FRP, Latitude, Longitude
     """
     try:
-        lat = float(linha.get("Latitude") or linha.get("lat") or 0)
-        lon = float(linha.get("Longitude") or linha.get("lon") or 0)
+        lat = float(linha.get("Latitude")  or linha.get("lat")  or 0)
+        lon = float(linha.get("Longitude") or linha.get("lon")  or 0)
 
-        # Formatos de data aceitos pelo INPE
         data_raw = (
             linha.get("DataHora")
             or linha.get("data_hora_gmt")
@@ -63,14 +117,16 @@ def parse_linha(linha: dict) -> dict | None:
         if risco < 0:
             risco = 0.0
 
+        estado_raw = (linha.get("Estado") or linha.get("estado") or "").strip()
+
         return {
             "localizacao": Point(lon, lat, srid=4326),
             "data_hora":   data_hora,
             "municipio":   (linha.get("Municipio") or linha.get("municipio") or "").strip(),
-            "estado":      (linha.get("Estado")    or linha.get("estado")    or "")[:2].upper(),
+            "estado":      normalizar_estado(estado_raw),
             "bioma":       normalizar_bioma(linha.get("Bioma") or linha.get("bioma") or ""),
-            "frp":              frp,
-            "risco_historico":  round(risco, 4),
+            "frp":             frp,
+            "risco_historico": round(risco, 4),
             "satelite":    (linha.get("Satelite") or linha.get("satelite") or "").strip(),
             "vento_ms":    None,
             "ndvi":        None,
@@ -84,9 +140,6 @@ def parse_linha(linha: dict) -> dict | None:
 def importar_csv_inpe(self, caminho_csv: str):
     """
     Importa CSV do INPE BDQueimadas para o banco PostGIS.
-    Aceita o formato padrão do BDQueimadas:
-      DataHora,Satelite,Pais,Estado,Municipio,Bioma,
-      DiaSemChuva,Precipitacao,RiscoFogo,FRP,Latitude,Longitude
     """
     importados = 0
     erros = 0

@@ -46,7 +46,14 @@ def make_foco(**kwargs) -> FocoQueimada:
     defaults.update(kwargs)
     return FocoQueimada.objects.create(**defaults)
 
-
+def test_geojson_retorna_feature_collection(self):
+    resp = self.client.get("/api/focos/geojson/")
+    self.assertEqual(resp.status_code, 200)
+    data = resp.json()
+    # Agora sem paginação — retorna FeatureCollection direto
+    self.assertEqual(data["type"], "FeatureCollection")
+    self.assertIn("features", data)
+    self.assertIsInstance(data["features"], list)
 def make_area(**kwargs) -> AreaRisco:
     """Cria uma AreaRisco com valores padrão."""
     poly = Polygon(((0, 0), (1, 0), (1, 1), (0, 1), (0, 0)), srid=4326)
