@@ -4,19 +4,18 @@ Testes do backend IgnisGeo.
 Cobertura:
   - NumeroFuzzy (distância, operações)
   - normalizar_fuzzy
-  - calcular_topsis_fuzzy (algoritmo completo)
-  - classificar_nivel
+  - calcular_topsis_fuzzy (algoritmo completo + classificação por percentil)
+  - classificar_nivel (função de compatibilidade)
   - FocoQueimada model
   - AreaRisco model
   - Endpoints da API REST
 """
 
 from datetime import date, datetime
-from django.utils import timezone
-
 
 from django.contrib.gis.geos import MultiPolygon, Point, Polygon
 from django.test import TestCase
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from .models import AreaRisco, FocoQueimada
@@ -34,47 +33,47 @@ from .topsis_fuzzy import (
 
 def make_foco(**kwargs) -> FocoQueimada:
     defaults = {
-        "localizacao": Point(-36.0, -9.5, srid=4326),
-        "data_hora":   timezone.make_aware(datetime(2026, 2, 1, 12, 0, 0)), 
-        "municipio":   "CORURIPE",
-        "estado":      "AL",
-        "bioma":       "MATA_ATLANTICA",
-        "frp":         50.0,
+        "localizacao":     Point(-36.0, -9.5, srid=4326),
+        "data_hora":       timezone.make_aware(datetime(2026, 2, 1, 12, 0, 0)),
+        "municipio":       "CORURIPE",
+        "estado":          "AL",
+        "bioma":           "MATA_ATLANTICA",
+        "frp":             50.0,
         "risco_historico": 0.5,
-        "satelite":    "NOAA-20",
+        "satelite":        "NOAA-20",
     }
     defaults.update(kwargs)
     return FocoQueimada.objects.create(**defaults)
 
-def test_geojson_retorna_feature_collection(self):
-    resp = self.client.get("/api/focos/geojson/")
-    self.assertEqual(resp.status_code, 200)
-    data = resp.json()
-    # Agora sem paginação — retorna FeatureCollection direto
-    self.assertEqual(data["type"], "FeatureCollection")
-    self.assertIn("features", data)
-    self.assertIsInstance(data["features"], list)
+
 def make_area(**kwargs) -> AreaRisco:
-    """Cria uma AreaRisco com valores padrão."""
     poly = Polygon(((0, 0), (1, 0), (1, 1), (0, 1), (0, 0)), srid=4326)
     defaults = {
-        "nome":          "CORURIPE/AL",
-        "estado":        "AL",
-        "bioma":         "MATA_ATLANTICA",
-        "geometria":     MultiPolygon(poly),
-        "score_topsis":  0.55,
-        "ranking":       1,
-        "nivel_risco":   "ALTO",
-        "total_focos":   100,
-        "frp_media":     45.0,
+        "nome":                  "CORURIPE/AL",
+        "estado":                "AL",
+        "bioma":                 "MATA_ATLANTICA",
+        "geometria":             MultiPolygon(poly),
+        "score_topsis":          0.55,
+        "ranking":               1,
+        "nivel_risco":           "ALTO",
+        "total_focos":           100,
+        "frp_media":             45.0,
         "risco_historico_medio": 0.5,
-        "vento_medio":   3.0,
-        "ndvi_medio":    0.4,
-        "periodo_inicio": date(2026, 2, 1),
-        "periodo_fim":   date(2026, 4, 22),
+        "vento_medio":           3.0,
+        "ndvi_medio":            0.4,
+        "periodo_inicio":        date(2026, 2, 1),
+        "periodo_fim":           date(2026, 4, 22),
     }
     defaults.update(kwargs)
     return AreaRisco.objects.create(**defaults)
+
+
+def _alternativa(nome, focos, frp, risco, vento, ndvi):
+    return {
+        "nome": nome, "municipio": nome, "estado": "AL", "bioma": "CAATINGA",
+        "total_focos": focos, "frp_media": frp,
+        "risco_historico_medio": risco, "vento_medio": vento, "ndvi_medio": ndvi,
+    }
 
 
 # ══════════════════════════════════════════════
@@ -109,7 +108,7 @@ class NumeroFuzzyTest(TestCase):
         import math
         a = NumeroFuzzy(0.0, 0.0, 0.0)
         b = NumeroFuzzy(0.1, 0.2, 0.3)
-        esperado = math.sqrt((1/3) * (0.01 + 0.04 + 0.09))
+        esperado = math.sqrt((1 / 3) * (0.01 + 0.04 + 0.09))
         self.assertAlmostEqual(a.distancia(b), esperado, places=6)
 
 
@@ -149,7 +148,7 @@ class NormalizarFuzzyTest(TestCase):
 
 
 # ══════════════════════════════════════════════
-# 3. classificar_nivel
+# 3. classificar_nivel (função de compatibilidade)
 # ══════════════════════════════════════════════
 
 class ClassificarNivelTest(TestCase):
@@ -171,18 +170,10 @@ class ClassificarNivelTest(TestCase):
         self.assertEqual(classificar_nivel(0.00), "BAIXO")
         self.assertEqual(classificar_nivel(0.24), "BAIXO")
 
-        
+
 # ══════════════════════════════════════════════
 # 4. calcular_topsis_fuzzy
 # ══════════════════════════════════════════════
-
-def _alternativa(nome, focos, frp, risco, vento, ndvi):
-    return {
-        "nome": nome, "municipio": nome, "estado": "AL", "bioma": "CAATINGA",
-        "total_focos": focos, "frp_media": frp,
-        "risco_historico_medio": risco, "vento_medio": vento, "ndvi_medio": ndvi,
-    }
-
 
 class TopsisTest(TestCase):
 
@@ -192,7 +183,7 @@ class TopsisTest(TestCase):
     def test_retorna_mesma_quantidade(self):
         alts = [
             _alternativa("A", 100, 50.0, 0.8, 5.0, 0.3),
-            _alternativa("B", 50,  20.0, 0.4, 2.0, 0.6),
+            _alternativa("B",  50, 20.0, 0.4, 2.0, 0.6),
             _alternativa("C", 200, 80.0, 0.9, 7.0, 0.2),
         ]
         resultado = calcular_topsis_fuzzy(alts)
@@ -201,12 +192,14 @@ class TopsisTest(TestCase):
     def test_area_maior_risco_tem_ranking_1(self):
         """A área com mais focos e maior FRP deve ter ranking 1."""
         alts = [
-            _alternativa("Baixo",  10,  5.0, 0.1, 1.0, 0.8),
+            _alternativa("Baixo",  10,   5.0, 0.1, 1.0, 0.8),
             _alternativa("Alto",  500, 200.0, 0.9, 8.0, 0.1),
         ]
         resultado = calcular_topsis_fuzzy(alts)
         self.assertEqual(resultado[0]["nome"], "Alto")
         self.assertEqual(resultado[0]["ranking"], 1)
+        self.assertEqual(resultado[0]["nivel_risco"], "CRITICO")
+        self.assertEqual(resultado[1]["nivel_risco"], "BAIXO")
 
     def test_score_entre_zero_e_um(self):
         alts = [
@@ -218,10 +211,12 @@ class TopsisTest(TestCase):
             self.assertLessEqual(item["score_topsis"], 1.0)
 
     def test_ranking_sequencial(self):
-        alts = [_alternativa(f"Área{i}", i*10, i*5.0, i*0.1, i*1.0, 0.5) for i in range(1, 6)]
+        alts = [_alternativa(f"Área{i}", i * 10, i * 5.0, i * 0.1, i * 1.0, 0.5)
+                for i in range(1, 6)]
         resultado = calcular_topsis_fuzzy(alts)
         rankings = [r["ranking"] for r in resultado]
         self.assertEqual(sorted(rankings), list(range(1, 6)))
+        self.assertEqual(resultado[0]["nivel_risco"], "CRITICO")
 
     def test_nivel_risco_presente(self):
         alts = [_alternativa("A", 100, 50.0, 0.5, 3.0, 0.4)]
@@ -233,6 +228,25 @@ class TopsisTest(TestCase):
         resultado = calcular_topsis_fuzzy(alts)
         self.assertEqual(len(resultado), 1)
         self.assertEqual(resultado[0]["ranking"], 1)
+
+    def test_distribuicao_percentil(self):
+        """Com 10 alternativas: top 10% = 1 Crítico, 10-25% = 1 Alto."""
+        alts = [_alternativa(f"A{i}", i * 50, i * 10.0, i * 0.1, i * 1.0, 0.5)
+                for i in range(1, 11)]
+        resultado = calcular_topsis_fuzzy(alts)
+        criticos = [r for r in resultado if r["nivel_risco"] == "CRITICO"]
+        altos    = [r for r in resultado if r["nivel_risco"] == "ALTO"]
+        self.assertEqual(len(criticos), 1)
+        self.assertEqual(len(altos), 1)
+
+    def test_percentil_proporcional(self):
+        """Com 20 alternativas: entre 1 e 4 Críticos (top 10%)."""
+        alts = [_alternativa(f"M{i}", i * 30, i * 8.0, i * 0.05, i * 0.5, 0.3)
+                for i in range(1, 21)]
+        resultado = calcular_topsis_fuzzy(alts)
+        criticos = [r for r in resultado if r["nivel_risco"] == "CRITICO"]
+        self.assertGreaterEqual(len(criticos), 1)
+        self.assertLessEqual(len(criticos), 4)
 
 
 # ══════════════════════════════════════════════
@@ -299,8 +313,8 @@ class EstatisticasAPITest(TestCase):
         self.assertEqual(data["areas_criticas"], 0)
 
     def test_estatisticas_com_focos(self):
-        make_foco(bioma="CERRADO", frp=30.0)
-        make_foco(bioma="CERRADO", frp=50.0)
+        make_foco(bioma="CERRADO",  frp=30.0)
+        make_foco(bioma="CERRADO",  frp=50.0)
         make_foco(bioma="CAATINGA", frp=20.0)
         resp = self.client.get("/api/estatisticas/")
         self.assertEqual(resp.status_code, 200)
@@ -311,9 +325,9 @@ class FocosAPITest(TestCase):
 
     def setUp(self):
         self.client = APIClient()
-        make_foco(municipio="CORURIPE",  estado="AL", bioma="CAATINGA",    frp=80.0)
-        make_foco(municipio="PENEDO",    estado="AL", bioma="MATA_ATLANTICA", frp=30.0)
-        make_foco(municipio="ALTAMIRA",  estado="PA", bioma="AMAZONIA",    frp=200.0)
+        make_foco(municipio="CORURIPE", estado="AL", bioma="CAATINGA",      frp=80.0)
+        make_foco(municipio="PENEDO",   estado="AL", bioma="MATA_ATLANTICA", frp=30.0)
+        make_foco(municipio="ALTAMIRA", estado="PA", bioma="AMAZONIA",      frp=200.0)
 
     def test_lista_todos(self):
         resp = self.client.get("/api/focos/")
@@ -331,18 +345,15 @@ class FocosAPITest(TestCase):
         data = resp.json()
         resultados = data.get("results", data)
         for item in resultados:
-            self.assertEqual(item["bioma"], "AMAZONIA") # type: ignore
+            self.assertEqual(item["bioma"], "AMAZONIA")
 
     def test_geojson_retorna_feature_collection(self):
         resp = self.client.get("/api/focos/geojson/")
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
-        # Com paginação ativa o GeoJSON vem dentro de "results"
-        geojson = data.get("results", data)
-        if isinstance(geojson, dict):
-            self.assertEqual(geojson.get("type"), "FeatureCollection")
-        else:
-            self.assertIsInstance(geojson, list)
+        self.assertEqual(data["type"], "FeatureCollection")
+        self.assertIn("features", data)
+        self.assertIsInstance(data["features"], list)
 
 
 class RankingAPITest(TestCase):
