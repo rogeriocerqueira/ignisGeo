@@ -50,18 +50,11 @@ let camadaAreas   = null;
 const camadaAtiva = ref("focos");
 
 const legendaItens = [
-  { cor: "#b91c1c", label: "Crítico (≥ 0.45)" },
-  { cor: "#c2410c", label: "Alto (0.35 – 0.45)" },
-  { cor: "#f97316", label: "Médio (0.25 – 0.35)" },
-  { cor: "#16a34a", label: "Baixo (< 0.25)" },
+  { cor: "#b91c1c", label: "Crítico (top 10%)"   },
+  { cor: "#c2410c", label: "Alto (10% – 25%)"    },
+  { cor: "#f97316", label: "Médio (25% – 50%)"   },
+  { cor: "#16a34a", label: "Baixo (abaixo 50%)"  },
 ];
-
-const corPorNivel = {
-  CRITICO: "#b91c1c",  // vermelho — mantém
-  ALTO:    "#c2410c",  // laranja escuro
-  MEDIO:   "#f97316",  // laranja padrão
-  BAIXO:   "#16a34a",  // verde — mantém
-};
 
 function corFoco(frp) {
   if (frp >= 200) return "#7c2d12";  // marrom escuro (muito intenso)
