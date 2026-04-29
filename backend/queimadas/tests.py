@@ -41,6 +41,8 @@ def make_foco(**kwargs) -> FocoQueimada:
         "frp":             50.0,
         "risco_historico": 0.5,
         "satelite":        "NOAA-20",
+        "dias_sem_chuva":  10.0,
+        "precipitacao":    0.0,
     }
     defaults.update(kwargs)
     return FocoQueimada.objects.create(**defaults)
@@ -49,30 +51,33 @@ def make_foco(**kwargs) -> FocoQueimada:
 def make_area(**kwargs) -> AreaRisco:
     poly = Polygon(((0, 0), (1, 0), (1, 1), (0, 1), (0, 0)), srid=4326)
     defaults = {
-        "nome":                  "CORURIPE/AL",
-        "estado":                "AL",
-        "bioma":                 "MATA_ATLANTICA",
-        "geometria":             MultiPolygon(poly),
-        "score_topsis":          0.55,
-        "ranking":               1,
-        "nivel_risco":           "ALTO",
-        "total_focos":           100,
-        "frp_media":             45.0,
-        "risco_historico_medio": 0.5,
-        "vento_medio":           3.0,
-        "ndvi_medio":            0.4,
-        "periodo_inicio":        date(2026, 2, 1),
-        "periodo_fim":           date(2026, 4, 22),
+        "nome":                   "CORURIPE/AL/MATA_ATLANTICA",
+        "estado":                 "AL",
+        "bioma":                  "MATA_ATLANTICA",
+        "geometria":              MultiPolygon(poly),
+        "score_topsis":           0.55,
+        "ranking":                1,
+        "nivel_risco":            "ALTO",
+        "total_focos":            100,
+        "frp_media":              45.0,
+        "risco_historico_medio":  0.5,
+        "dias_sem_chuva_medio":   10.0,
+        "precipitacao_media":     0.0,
+        "periodo_inicio":         date(2026, 2, 1),
+        "periodo_fim":            date(2026, 4, 22),
     }
     defaults.update(kwargs)
     return AreaRisco.objects.create(**defaults)
 
 
-def _alternativa(nome, focos, frp, risco, vento, ndvi):
+def _alternativa(nome, focos, frp, risco, dias_sem_chuva, precipitacao):
     return {
         "nome": nome, "municipio": nome, "estado": "AL", "bioma": "CAATINGA",
-        "total_focos": focos, "frp_media": frp,
-        "risco_historico_medio": risco, "vento_medio": vento, "ndvi_medio": ndvi,
+        "total_focos":           focos,
+        "frp_media":             frp,
+        "risco_historico_medio": risco,
+        "dias_sem_chuva_medio":  dias_sem_chuva,
+        "precipitacao_media":    precipitacao,
     }
 
 
@@ -148,7 +153,7 @@ class NormalizarFuzzyTest(TestCase):
 
 
 # ══════════════════════════════════════════════
-# 3. classificar_nivel (função de compatibilidade)
+# 3. classificar_nivel (compatibilidade)
 # ══════════════════════════════════════════════
 
 class ClassificarNivelTest(TestCase):
@@ -182,18 +187,18 @@ class TopsisTest(TestCase):
 
     def test_retorna_mesma_quantidade(self):
         alts = [
-            _alternativa("A", 100, 50.0, 0.8, 5.0, 0.3),
-            _alternativa("B",  50, 20.0, 0.4, 2.0, 0.6),
-            _alternativa("C", 200, 80.0, 0.9, 7.0, 0.2),
+            _alternativa("A", 100, 50.0, 0.8, 15.0, 0.0),
+            _alternativa("B",  50, 20.0, 0.4,  5.0, 2.0),
+            _alternativa("C", 200, 80.0, 0.9, 20.0, 0.0),
         ]
         resultado = calcular_topsis_fuzzy(alts)
         self.assertEqual(len(resultado), 3)
 
     def test_area_maior_risco_tem_ranking_1(self):
-        """A área com mais focos e maior FRP deve ter ranking 1."""
+        """A área com mais focos, maior FRP e mais dias sem chuva deve ter ranking 1."""
         alts = [
-            _alternativa("Baixo",  10,   5.0, 0.1, 1.0, 0.8),
-            _alternativa("Alto",  500, 200.0, 0.9, 8.0, 0.1),
+            _alternativa("Baixo",  10,   5.0, 0.1,  2.0, 5.0),
+            _alternativa("Alto",  500, 200.0, 0.9, 30.0, 0.0),
         ]
         resultado = calcular_topsis_fuzzy(alts)
         self.assertEqual(resultado[0]["nome"], "Alto")
@@ -203,15 +208,15 @@ class TopsisTest(TestCase):
 
     def test_score_entre_zero_e_um(self):
         alts = [
-            _alternativa("X", 100, 50.0, 0.5, 3.0, 0.4),
-            _alternativa("Y",  50, 20.0, 0.3, 2.0, 0.6),
+            _alternativa("X", 100, 50.0, 0.5, 10.0, 1.0),
+            _alternativa("Y",  50, 20.0, 0.3,  5.0, 3.0),
         ]
         for item in calcular_topsis_fuzzy(alts):
             self.assertGreaterEqual(item["score_topsis"], 0.0)
             self.assertLessEqual(item["score_topsis"], 1.0)
 
     def test_ranking_sequencial(self):
-        alts = [_alternativa(f"Área{i}", i * 10, i * 5.0, i * 0.1, i * 1.0, 0.5)
+        alts = [_alternativa(f"Área{i}", i * 10, i * 5.0, i * 0.1, i * 2.0, 0.0)
                 for i in range(1, 6)]
         resultado = calcular_topsis_fuzzy(alts)
         rankings = [r["ranking"] for r in resultado]
@@ -219,19 +224,19 @@ class TopsisTest(TestCase):
         self.assertEqual(resultado[0]["nivel_risco"], "CRITICO")
 
     def test_nivel_risco_presente(self):
-        alts = [_alternativa("A", 100, 50.0, 0.5, 3.0, 0.4)]
+        alts = [_alternativa("A", 100, 50.0, 0.5, 10.0, 1.0)]
         resultado = calcular_topsis_fuzzy(alts)
         self.assertIn(resultado[0]["nivel_risco"], ["CRITICO", "ALTO", "MEDIO", "BAIXO"])
 
     def test_alternativa_unica(self):
-        alts = [_alternativa("Único", 100, 50.0, 0.5, 3.0, 0.4)]
+        alts = [_alternativa("Único", 100, 50.0, 0.5, 10.0, 1.0)]
         resultado = calcular_topsis_fuzzy(alts)
         self.assertEqual(len(resultado), 1)
         self.assertEqual(resultado[0]["ranking"], 1)
 
     def test_distribuicao_percentil(self):
         """Com 10 alternativas: top 10% = 1 Crítico, 10-25% = 1 Alto."""
-        alts = [_alternativa(f"A{i}", i * 50, i * 10.0, i * 0.1, i * 1.0, 0.5)
+        alts = [_alternativa(f"A{i}", i * 50, i * 10.0, i * 0.1, i * 3.0, max(0, 5 - i))
                 for i in range(1, 11)]
         resultado = calcular_topsis_fuzzy(alts)
         criticos = [r for r in resultado if r["nivel_risco"] == "CRITICO"]
@@ -241,7 +246,7 @@ class TopsisTest(TestCase):
 
     def test_percentil_proporcional(self):
         """Com 20 alternativas: entre 1 e 4 Críticos (top 10%)."""
-        alts = [_alternativa(f"M{i}", i * 30, i * 8.0, i * 0.05, i * 0.5, 0.3)
+        alts = [_alternativa(f"M{i}", i * 30, i * 8.0, i * 0.05, i * 2.0, max(0, 10 - i))
                 for i in range(1, 21)]
         resultado = calcular_topsis_fuzzy(alts)
         criticos = [r for r in resultado if r["nivel_risco"] == "CRITICO"]
@@ -282,14 +287,14 @@ class AreaRiscoModelTest(TestCase):
         self.assertIsNotNone(area.pk)
 
     def test_str(self):
-        area = make_area(nome="CORURIPE/AL", score_topsis=0.55, nivel_risco="ALTO")
+        area = make_area(nome="CORURIPE/AL/CAATINGA", score_topsis=0.55, nivel_risco="ALTO")
         self.assertIn("CORURIPE", str(area))
         self.assertIn("0.550", str(area))
 
     def test_ordenacao_por_ranking(self):
-        make_area(nome="C/AL", ranking=3, score_topsis=0.3)
-        make_area(nome="A/AL", ranking=1, score_topsis=0.9)
-        make_area(nome="B/AL", ranking=2, score_topsis=0.6)
+        make_area(nome="C/AL/CERRADO",        ranking=3, score_topsis=0.3)
+        make_area(nome="A/AL/CAATINGA",       ranking=1, score_topsis=0.9)
+        make_area(nome="B/AL/MATA_ATLANTICA", ranking=2, score_topsis=0.6)
         areas = list(AreaRisco.objects.all())
         self.assertEqual(areas[0].ranking, 1)
         self.assertEqual(areas[1].ranking, 2)
@@ -366,8 +371,8 @@ class RankingAPITest(TestCase):
         self.assertEqual(resp.status_code, 200)
 
     def test_ranking_com_areas(self):
-        make_area(nome="AREA1/AL", ranking=1, score_topsis=0.9)
-        make_area(nome="AREA2/AL", ranking=2, score_topsis=0.6)
+        make_area(nome="AREA1/AL/CERRADO",   ranking=1, score_topsis=0.9)
+        make_area(nome="AREA2/AL/CAATINGA",  ranking=2, score_topsis=0.6)
         resp = self.client.get("/api/ranking/")
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
@@ -405,6 +410,8 @@ class TopsisAPITest(TestCase):
                 bioma="CAATINGA",
                 frp=float(10 + i * 20),
                 risco_historico=0.3 + i * 0.1,
+                dias_sem_chuva=float(i * 5),
+                precipitacao=float(max(0, 10 - i * 2)),
             )
         resp = self.client.post(
             "/api/calcular-topsis/",
