@@ -18,8 +18,8 @@ class FocoQueimadaGeoSerializer(GeoFeatureModelSerializer):
             "bioma",
             "frp",
             "risco_historico",
-            "vento_ms",
-            "ndvi",
+            "dias_sem_chuva",
+            "precipitacao",
             "satelite",
         ]
 
@@ -60,8 +60,8 @@ class AreaRiscoGeoSerializer(GeoFeatureModelSerializer):
             "total_focos",
             "frp_media",
             "risco_historico_medio",
-            "vento_medio",
-            "ndvi_medio",
+            "dias_sem_chuva",
+            "precipitacao",
             "periodo_inicio",
             "periodo_fim",
             "atualizado_em",

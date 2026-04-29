@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date
 from django.contrib.gis.geos import Polygon
 from django.db.models import Avg, Count
 from rest_framework import generics, status
@@ -23,19 +23,16 @@ class FocosGeoJSONView(generics.ListAPIView):
 
     def get_queryset(self):
         qs = FocoQueimada.objects.all()
-        bioma = self.request.query_params.get("bioma")
-        if bioma:
-            qs = qs.filter(bioma=bioma)
-        estado = self.request.query_params.get("estado")
-        if estado:
-            qs = qs.filter(estado=estado.upper())
+        bioma       = self.request.query_params.get("bioma")
+        estado      = self.request.query_params.get("estado")
         data_inicio = self.request.query_params.get("data_inicio")
-        if data_inicio:
-            qs = qs.filter(data_hora__date__gte=data_inicio)
-        data_fim = self.request.query_params.get("data_fim")
-        if data_fim:
-            qs = qs.filter(data_hora__date__lte=data_fim)
-        bbox = self.request.query_params.get("bbox")
+        data_fim    = self.request.query_params.get("data_fim")
+        bbox        = self.request.query_params.get("bbox")
+
+        if bioma:       qs = qs.filter(bioma=bioma)
+        if estado:      qs = qs.filter(estado=estado.upper())
+        if data_inicio: qs = qs.filter(data_hora__date__gte=data_inicio)
+        if data_fim:    qs = qs.filter(data_hora__date__lte=data_fim)
         if bbox:
             try:
                 coords = [float(x) for x in bbox.split(",")]
@@ -44,6 +41,7 @@ class FocosGeoJSONView(generics.ListAPIView):
                     qs = qs.filter(localizacao__within=poligono)
             except (ValueError, TypeError):
                 pass
+
         return qs.order_by("-data_hora")[:5000]
 
 
@@ -51,13 +49,11 @@ class FocosListView(generics.ListAPIView):
     serializer_class = FocoQueimadaListSerializer
 
     def get_queryset(self):
-        qs = FocoQueimada.objects.all()
-        bioma = self.request.query_params.get("bioma")
+        qs     = FocoQueimada.objects.all()
+        bioma  = self.request.query_params.get("bioma")
         estado = self.request.query_params.get("estado")
-        if bioma:
-            qs = qs.filter(bioma=bioma)
-        if estado:
-            qs = qs.filter(estado=estado.upper())
+        if bioma:  qs = qs.filter(bioma=bioma)
+        if estado: qs = qs.filter(estado=estado.upper())
         return qs.order_by("-frp")[:500]
 
 
@@ -66,16 +62,13 @@ class AreasRiscoGeoJSONView(generics.ListAPIView):
     pagination_class = None
 
     def get_queryset(self):
-        qs = AreaRisco.objects.filter(geometria__isnull=False)
-        nivel = self.request.query_params.get("nivel_risco")
-        if nivel:
-            qs = qs.filter(nivel_risco=nivel.upper())
-        bioma = self.request.query_params.get("bioma")
-        if bioma:
-            qs = qs.filter(bioma=bioma)
+        qs     = AreaRisco.objects.filter(geometria__isnull=False)
+        nivel  = self.request.query_params.get("nivel_risco")
+        bioma  = self.request.query_params.get("bioma")
         estado = self.request.query_params.get("estado")
-        if estado:
-            qs = qs.filter(estado=estado.upper())
+        if nivel:  qs = qs.filter(nivel_risco=nivel.upper())
+        if bioma:  qs = qs.filter(bioma=bioma)
+        if estado: qs = qs.filter(estado=estado.upper())
         return qs.order_by("ranking")
 
 
@@ -83,7 +76,7 @@ class RankingView(generics.ListAPIView):
     serializer_class = AreaRiscoRankingSerializer
 
     def get_queryset(self):
-        qs = AreaRisco.objects.all()
+        qs     = AreaRisco.objects.all()
         nivel  = self.request.query_params.get("nivel_risco")
         estado = self.request.query_params.get("estado")
         bioma  = self.request.query_params.get("bioma")
@@ -92,12 +85,21 @@ class RankingView(generics.ListAPIView):
         if bioma:  qs = qs.filter(bioma=bioma)
         return qs.order_by("ranking")
 
+
 @csrf_exempt
 @api_view(["POST"])
 def calcular_topsis_view(request):
     """
     POST /api/calcular-topsis/
+
     Recalcula o TOPSIS Fuzzy respeitando os filtros ativos.
+    Critérios (todos do CSV padrão INPE BDQueimadas):
+      C1 total_focos           — contagem de focos no período
+      C2 frp_media             — Fire Radiative Power médio (MW)
+      C3 risco_historico_medio — índice de risco INPE [0,1]
+      C4 dias_sem_chuva_medio  — dias consecutivos sem chuva (benefício)
+      C5 precipitacao_media    — precipitação média em mm (custo)
+
     Body (todos opcionais): data_inicio, data_fim, estado, bioma
     """
     data_inicio_str = request.data.get("data_inicio")
@@ -105,9 +107,11 @@ def calcular_topsis_view(request):
     estado_filtro   = request.data.get("estado")
     bioma_filtro    = request.data.get("bioma")
 
+    # ── Validação e parse das datas ──
+    from datetime import datetime
+
     if data_inicio_str:
         try:
-            from datetime import datetime
             data_inicio = datetime.strptime(data_inicio_str, "%Y-%m-%d").date()
         except ValueError:
             return Response(
@@ -119,7 +123,6 @@ def calcular_topsis_view(request):
 
     if data_fim_str:
         try:
-            from datetime import datetime
             data_fim = datetime.strptime(data_fim_str, "%Y-%m-%d").date()
         except ValueError:
             return Response(
@@ -129,24 +132,22 @@ def calcular_topsis_view(request):
     else:
         data_fim = None
 
+    # ── Queryset com filtros ativos ──
     qs = FocoQueimada.objects.all()
-    if data_inicio:
-        qs = qs.filter(data_hora__date__gte=data_inicio)
-    if data_fim:
-        qs = qs.filter(data_hora__date__lte=data_fim)
-    if estado_filtro:
-        qs = qs.filter(estado=estado_filtro.upper())
-    if bioma_filtro:
-        qs = qs.filter(bioma=bioma_filtro)
+    if data_inicio:   qs = qs.filter(data_hora__date__gte=data_inicio)
+    if data_fim:      qs = qs.filter(data_hora__date__lte=data_fim)
+    if estado_filtro: qs = qs.filter(estado=estado_filtro.upper())
+    if bioma_filtro:  qs = qs.filter(bioma=bioma_filtro)
 
+    # ── Agregação por município → matriz de decisão D[m×n] ──
     metricas = (
         qs.values("municipio", "estado", "bioma")
         .annotate(
-            total_focos=Count("id"),
-            frp_media=Avg("frp"),
-            risco_historico_medio=Avg("risco_historico"),
-            vento_medio=Avg("vento_ms"),
-            ndvi_medio=Avg("ndvi"),
+            total_focos=Count("id"),                        # C1
+            frp_media=Avg("frp"),                           # C2
+            risco_historico_medio=Avg("risco_historico"),   # C3
+            dias_sem_chuva_medio=Avg("dias_sem_chuva"),     # C4
+            precipitacao_media=Avg("precipitacao"),         # C5
         )
         .filter(total_focos__gte=1)
     )
@@ -157,31 +158,36 @@ def calcular_topsis_view(request):
             status=status.HTTP_200_OK,
         )
 
+    # ── Monta lista de alternativas ──
     alternativas = [
         {
-            "nome":                  f"{m['municipio']}/{m['estado']}",
+            "nome": f"{m['municipio']}/{m['estado']}/{m['bioma']}",
             "municipio":             m["municipio"],
             "estado":                m["estado"],
             "bioma":                 m["bioma"],
-            "total_focos":           m["total_focos"] or 0,
-            "frp_media":             m["frp_media"] or 0.0,
+            "total_focos":           m["total_focos"]           or 0,
+            "frp_media":             m["frp_media"]             or 0.0,
             "risco_historico_medio": m["risco_historico_medio"] or 0.0,
-            "vento_medio":           m["vento_medio"] or 0.0,
-            "ndvi_medio":            m["ndvi_medio"] or 0.0,
+            "dias_sem_chuva_medio":  m["dias_sem_chuva_medio"]  or 0.0,
+            "precipitacao_media":    m["precipitacao_media"]    or 0.0,
         }
         for m in metricas
     ]
 
     resultado = calcular_topsis_fuzzy(alternativas)
 
-    # Usa datas reais do banco quando não informado
+    # ── Resolve datas para persistência ──
     if not data_inicio or not data_fim:
         primeiro = FocoQueimada.objects.order_by("data_hora").first()
         ultimo   = FocoQueimada.objects.order_by("-data_hora").first()
-        data_inicio = data_inicio or (primeiro.data_hora.date() if primeiro else date.today())
-        data_fim    = data_fim    or (ultimo.data_hora.date()   if ultimo   else date.today())
+        data_inicio = data_inicio or (
+            primeiro.data_hora.date() if primeiro else date.today()
+        )
+        data_fim = data_fim or (
+            ultimo.data_hora.date() if ultimo else date.today()
+        )
 
-    # Limpa tudo e salva com bulk_create
+    # ── Limpa ranking anterior e salva ──
     AreaRisco.objects.all().delete()
 
     novas_areas = [
@@ -196,8 +202,8 @@ def calcular_topsis_view(request):
             total_focos=item["total_focos"],
             frp_media=item["frp_media"],
             risco_historico_medio=item["risco_historico_medio"],
-            vento_medio=item["vento_medio"],
-            ndvi_medio=item["ndvi_medio"],
+            dias_sem_chuva_medio=item["dias_sem_chuva_medio"],
+            precipitacao_media=item["precipitacao_media"],
             periodo_inicio=data_inicio,
             periodo_fim=data_fim,
         )
@@ -205,13 +211,15 @@ def calcular_topsis_view(request):
     ]
 
     AreaRisco.objects.bulk_create(novas_areas)
-    areas_criadas = len(novas_areas)
 
     return Response({
         "mensagem":          f"TOPSIS Fuzzy calculado para {len(resultado)} áreas.",
         "periodo":           {"inicio": str(data_inicio), "fim": str(data_fim)},
-        "filtros":           {"estado": estado_filtro or "Todos", "bioma": bioma_filtro or "Todos"},
-        "areas_atualizadas": areas_criadas,
+        "filtros":           {
+            "estado": estado_filtro or "Todos",
+            "bioma":  bioma_filtro  or "Todos",
+        },
+        "areas_atualizadas": len(novas_areas),
         "top_5": [
             {
                 "nome":         r["nome"],
@@ -248,10 +256,9 @@ def estatisticas_view(request):
     if data_inicio: qs = qs.filter(data_hora__date__gte=data_inicio)
     if data_fim:    qs = qs.filter(data_hora__date__lte=data_fim)
 
-    total_focos = qs.count()                          # ← usa qs filtrado
+    total_focos = qs.count()
     por_bioma = (
-        qs                                            # ← usa qs filtrado
-        .values("bioma")
+        qs.values("bioma")
         .annotate(total=Count("id"), frp_media=Avg("frp"))
         .order_by("-total")
     )
