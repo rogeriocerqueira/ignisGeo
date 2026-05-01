@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="m-Va2BuU62M-LA0GoPC-" name="Page-1">
-        <mxGraphModel dx="836" dy="565" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+        <mxGraphModel dx="836" dy="706" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -20,16 +20,16 @@
                     <mxGeometry x="184" y="135" width="460" height="20" as="geometry"/>
                 </mxCell>
                 <mxCell id="c1_ex1" value="Ordem pública" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D3E4F0;strokeColor=#6E90B0;fontSize=10;fontColor=#1A2E3E;" parent="1" vertex="1">
-                    <mxGeometry x="100" y="200" width="120" height="30" as="geometry"/>
+                    <mxGeometry x="74" y="200" width="120" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="c1_ex2" value="Criminalidade" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D3E4F0;strokeColor=#6E90B0;fontSize=10;fontColor=#1A2E3E;" parent="1" vertex="1">
-                    <mxGeometry x="100" y="240" width="120" height="30" as="geometry"/>
+                    <mxGeometry x="74" y="240" width="120" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="c1_ex3" value="Defesa Nacional" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D3E4F0;strokeColor=#6E90B0;fontSize=10;fontColor=#1A2E3E;" parent="1" vertex="1">
-                    <mxGeometry x="100" y="280" width="120" height="30" as="geometry"/>
+                    <mxGeometry x="74" y="285" width="120" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="c1_ex4" value="Forças policiais" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D3E4F0;strokeColor=#6E90B0;fontSize=10;fontColor=#1A2E3E;" parent="1" vertex="1">
-                    <mxGeometry x="100" y="320" width="120" height="30" as="geometry"/>
+                    <mxGeometry x="74" y="330" width="120" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="c1_ref" value="Souza (2007) · Freire (2009)&lt;br&gt;Policarpo et al. (2014)" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=9;fontColor=#3A5A74;" parent="1" vertex="1">
                     <mxGeometry x="100" y="360" width="140" height="35" as="geometry"/>
@@ -94,7 +94,7 @@
                 <mxCell id="contrib" value="&lt;b&gt;Contribuição do trabalho&lt;/b&gt;&lt;br&gt;&lt;br&gt;O IgnisGeo situa-se na intersecção entre:&lt;br&gt;· Segurança ambiental&lt;br&gt;· Gestão de riscos de desastres&lt;br&gt;· Engenharia de Software (DSS)&lt;br&gt;&lt;br&gt;Proposta:&lt;br&gt;API RESTful que integra dados públicos&lt;br&gt;do INPE com TOPSIS Fuzzy para gerar&lt;br&gt;rankings georreferenciados de municípios&lt;br&gt;prioritários para Defesa Civil e IBAMA.&lt;br&gt;&lt;br&gt;Fundamentação jurídica:&lt;br&gt;· CF/1988 Art. 144&lt;br&gt;· Lei 12.608/2012 — PNPDEC&lt;br&gt;· Lei 12.651/2012 — Código Florestal&lt;br&gt;&lt;br&gt;Método multicritério:&lt;br&gt;· TOPSIS Fuzzy — Chen (2000)&lt;br&gt;· 5 critérios do CSV INPE&lt;br&gt;· 2.191 municípios ranqueados&lt;br&gt;· 3.673.318 focos de calor&lt;br&gt;· 27 estados · jan/2025–abr/2026" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#B4B2A9;strokeWidth=1.5;fontSize=11;align=left;spacingLeft=12;verticalAlign=top;" parent="1" vertex="1">
                     <mxGeometry x="790" y="90" width="320" height="420" as="geometry"/>
                 </mxCell>
-                <mxCell id="refs" value="&lt;b&gt;Referências&lt;/b&gt;&lt;br&gt;&lt;br&gt;BRASIL. Constituição Federal, 1988. Art. 144.&lt;br&gt;BRASIL. Lei nº 12.608/2012 — PNPDEC.&lt;br&gt;BRASIL. Lei nº 12.651/2012 — Código Florestal.&lt;br&gt;CHEN, C.T. Fuzzy Sets and Systems, 2000.&lt;br&gt;FREIRE, M.D. Espaço Acadêmico, 2009.&lt;br&gt;INPE. BDQueimadas, 2024. queimadas.dgi.inpe.br&lt;br&gt;SOUZA, L.A.F. Rev. Sociologia e Política, 2007.&lt;br&gt;TZENG, G.H.; HUANG, J.J. CRC Press, 2011.&lt;br&gt;UNDRR. Sendai Framework, 2015.&lt;br&gt;POLICARPO, F. et al. Dilemas, 2014." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#B4B2A9;strokeWidth=1;fontSize=10;align=left;spacingLeft=8;verticalAlign=top;" parent="1" vertex="1">
+                <mxCell id="refs" value="&lt;b&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;Referências&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;BRASIL. Constituição Federal, 1988. Art. 144.&lt;br&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;BRASIL. Lei nº 12.608/2012 — PNPDEC.&lt;br&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;BRASIL. Lei nº 12.651/2012 — Código Florestal.&lt;br&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;CHEN, C.T. Fuzzy Sets and Systems, 2000.&lt;br&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;FREIRE, M.D. Espaço Acadêmico, 2009.&lt;br&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;INPE. BDQueimadas, 2024. queimadas.dgi.inpe.br&lt;br&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;SOUZA, L.A.F. Rev. Sociologia e Política, 2007.&lt;br&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;TZENG, G.H.; HUANG, J.J. CRC Press, 2011.&lt;br&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;UNDRR. Sendai Framework, 2015.&lt;br&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;POLICARPO, F. et al. Dilemas, 2014." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#B4B2A9;strokeWidth=1;fontSize=10;align=left;spacingLeft=8;verticalAlign=top;" parent="1" vertex="1">
                     <mxGeometry x="790" y="520" width="310" height="240" as="geometry"/>
                 </mxCell>
                 <mxCell id="leg_title" value="Legenda" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;fontStyle=1;" parent="1" vertex="1">
