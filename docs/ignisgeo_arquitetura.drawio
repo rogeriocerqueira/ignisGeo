@@ -1,0 +1,187 @@
+<mxfile host="65bd71144e">
+    <diagram id="f0lDxVr6YgWxDMx9Lza3" name="Page-1">
+        <mxGraphModel dx="836" dy="565" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="IgnisGeo — Arquitetura de Software" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="400" y="20" width="600" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="subtitle" value="Layered Architecture + Event-Driven · RESTful (Fielding, 2000) · SOLID · TOPSIS Fuzzy (Chen, 2000)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontColor=#666666;" parent="1" vertex="1">
+                    <mxGeometry x="300" y="50" width="800" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="inpe" value="&lt;b&gt;🌐 INPE BDQueimadas&lt;/b&gt;&lt;br&gt;Banco de Dados Externo&lt;br&gt;queimadas.dgi.inpe.br&lt;br&gt;&lt;font color=&#39;#A32D2D&#39;&gt;CSV · FRP · RiscoFogo&lt;br&gt;DiaSemChuva · Precipitacao&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCEBEB;strokeColor=#E24B4A;strokeWidth=2;dashed=1;dashPattern=8 4;fontSize=11;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="90" width="200" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="layered_container" value="Arquitetura em Camadas — Bass, Clements &amp; Kazman (2012)" style="swimlane;startSize=30;fillColor=#F5F5F5;strokeColor=#B4B2A9;strokeWidth=2;fontSize=12;fontStyle=1;align=left;swimlaneLine=1;" parent="1" vertex="1">
+                    <mxGeometry x="280" y="80" width="680" height="820" as="geometry"/>
+                </mxCell>
+                <mxCell id="c4_container" value="C4 — Apresentação · MVVM · Observer Pattern · :5173" style="swimlane;startSize=25;fillColor=#E6F1FB;strokeColor=#85B7EB;strokeWidth=1.5;fontSize=11;fontStyle=1;fontColor=#0C447C;" parent="layered_container" vertex="1">
+                    <mxGeometry x="20" y="40" width="640" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="vue3" value="&lt;b&gt;Vue 3&lt;/b&gt;&lt;br&gt;Composition API&lt;br&gt;HMR · Vite" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B5D4F4;strokeColor=#378ADD;fontSize=11;" parent="c4_container" vertex="1">
+                    <mxGeometry x="10" y="35" width="110" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="pinia" value="&lt;b&gt;Pinia&lt;/b&gt;&lt;br&gt;State Management&lt;br&gt;watch() · Observer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B5D4F4;strokeColor=#378ADD;fontSize=11;" parent="c4_container" vertex="1">
+                    <mxGeometry x="130" y="35" width="110" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="leaflet" value="&lt;b&gt;Leaflet&lt;/b&gt;&lt;br&gt;GeoJSON Map&lt;br&gt;Heatmap · Focos" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B5D4F4;strokeColor=#378ADD;fontSize=11;" parent="c4_container" vertex="1">
+                    <mxGeometry x="250" y="35" width="110" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="axios" value="&lt;b&gt;Axios&lt;/b&gt;&lt;br&gt;HTTP Client&lt;br&gt;REST calls" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B5D4F4;strokeColor=#378ADD;fontSize=11;" parent="c4_container" vertex="1">
+                    <mxGeometry x="370" y="35" width="110" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="components" value="&lt;b&gt;Components&lt;/b&gt;&lt;br&gt;StatsBar · FiltrosPainel&lt;br&gt;MapaQueimadas · PainelRanking" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B5D4F4;strokeColor=#378ADD;fontSize=11;" parent="c4_container" vertex="1">
+                    <mxGeometry x="490" y="35" width="140" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow_c4_c3" value="HTTP/JSON · RESTful" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" parent="layered_container" source="c4_container" target="c3_container" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="c3_container" value="C3 — API REST · Django 5 · DRF · GeoDjango · :8000" style="swimlane;startSize=25;fillColor=#E1F5EE;strokeColor=#5DCAA5;strokeWidth=1.5;fontSize=11;fontStyle=1;fontColor=#085041;" parent="layered_container" vertex="1">
+                    <mxGeometry x="20" y="200" width="640" height="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="django" value="&lt;b&gt;Django 5&lt;/b&gt;&lt;br&gt;MTV Pattern&lt;br&gt;WSGI · Admin" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9FE1CB;strokeColor=#1D9E75;fontSize=11;" parent="c3_container" vertex="1">
+                    <mxGeometry x="10" y="35" width="120" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="drf" value="&lt;b&gt;DRF&lt;/b&gt;&lt;br&gt;Serializers&lt;br&gt;Views · @api_view" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9FE1CB;strokeColor=#1D9E75;fontSize=11;" parent="c3_container" vertex="1">
+                    <mxGeometry x="140" y="35" width="120" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="geodjango" value="&lt;b&gt;GeoDjango&lt;/b&gt;&lt;br&gt;GeoJSON RFC 7946&lt;br&gt;SRID 4326" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9FE1CB;strokeColor=#1D9E75;fontSize=11;" parent="c3_container" vertex="1">
+                    <mxGeometry x="270" y="35" width="120" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="endpoints" value="&lt;b&gt;Endpoints RESTful&lt;/b&gt;&lt;br&gt;GET /focos/geojson/&lt;br&gt;GET /ranking/ · /estatisticas/&lt;br&gt;POST /calcular-topsis/&lt;br&gt;POST /importar-csv/" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F6E56;strokeColor=#085041;fontSize=10;fontColor=#FFFFFF;" parent="c3_container" vertex="1">
+                    <mxGeometry x="400" y="35" width="230" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="patterns_c3" value="Decorator: @csrf_exempt @api_view  ·  Adapter: GeoFeatureModelSerializer  ·  Facade: calcular_topsis_view()  ·  SRP: views.py só roteia" style="text;html=1;strokeColor=#5DCAA5;fillColor=#5DCAA5;align=left;verticalAlign=middle;spacingLeft=8;fontSize=10;fontColor=#04342C;" parent="c3_container" vertex="1">
+                    <mxGeometry x="10" y="115" width="620" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow_c3_c2" value="Django ORM · QuerySet" style="edgeStyle=orthogonalEdgeStyle;rounded=0;fontSize=10;" parent="layered_container" source="c3_container" target="c2_container" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="c2_container" value="C2 — Domínio · TOPSIS Fuzzy · Strategy + Template Method + Facade" style="swimlane;startSize=25;fillColor=#EEEDFE;strokeColor=#AFA9EC;strokeWidth=1.5;fontSize=11;fontStyle=1;fontColor=#3C3489;" parent="layered_container" vertex="1">
+                    <mxGeometry x="20" y="395" width="640" height="205" as="geometry"/>
+                </mxCell>
+                <mxCell id="topsis" value="&lt;b&gt;topsis_fuzzy.py&lt;/b&gt;&lt;br&gt;Chen (2000) · NumPy&lt;br&gt;O(mn + m log m)&lt;br&gt;&lt;br&gt;E1 normalizar_fuzzy() TFN δ=0.10&lt;br&gt;E2 multiplicar_fuzzy() Ṽ=w̃⊗r̃&lt;br&gt;E3 A⁺=(1,1,1) · A⁻=(0,0,0)&lt;br&gt;E4 distancia vertex d(Ã,B̃)&lt;br&gt;E5 CCᵢ = d⁻ᵢ/(d⁺ᵢ+d⁻ᵢ)&lt;br&gt;E6 classificar_por_percentil()&lt;br&gt;P₉₀=Crítico P₇₅=Alto P₅₀=Médio" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CECBF6;strokeColor=#534AB7;fontSize=10;align=left;spacingLeft=8;verticalAlign=top;" parent="c2_container" vertex="1">
+                    <mxGeometry x="10" y="35" width="200" height="165" as="geometry"/>
+                </mxCell>
+                <mxCell id="criterios" value="&lt;b&gt;5 Critérios — CSV INPE&lt;/b&gt;&lt;br&gt;&lt;br&gt;C1 total_focos     Muito alto · Benefício&lt;br&gt;C2 frp_media       Muito alto · Benefício&lt;br&gt;C3 risco_historico Alto · Benefício&lt;br&gt;C4 dias_sem_chuva  Alto · Benefício ✓&lt;br&gt;C5 precipitacao    Médio · Custo ✓&lt;br&gt;&lt;br&gt;Escala linguística fuzzy&lt;br&gt;sem AHP — Strategy Pattern&lt;br&gt;CRITERIOS_CUSTO: {precipitacao}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CECBF6;strokeColor=#534AB7;fontSize=10;align=left;spacingLeft=8;verticalAlign=top;" parent="c2_container" vertex="1">
+                    <mxGeometry x="220" y="35" width="200" height="165" as="geometry"/>
+                </mxCell>
+                <mxCell id="models" value="&lt;b&gt;models.py · SOLID&lt;/b&gt;&lt;br&gt;&lt;br&gt;FocoQueimada&lt;br&gt;· PointField SRID 4326&lt;br&gt;· frp · risco_historico&lt;br&gt;· dias_sem_chuva&lt;br&gt;· precipitacao&lt;br&gt;&lt;br&gt;AreaRisco&lt;br&gt;· score_topsis · nivel_risco&lt;br&gt;· ranking · bioma&lt;br&gt;· MultiPolygonField nullable&lt;br&gt;· nome unique (MUN/UF/BIOMA)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CECBF6;strokeColor=#534AB7;fontSize=10;align=left;spacingLeft=8;verticalAlign=top;" parent="c2_container" vertex="1">
+                    <mxGeometry x="430" y="35" width="200" height="165" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow_c2_c1" value="SQL · PostGIS · bulk_create" style="edgeStyle=orthogonalEdgeStyle;rounded=0;fontSize=10;" parent="layered_container" source="c2_container" target="c1_container" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="c1_container" value="C1 — Dados · Repository Pattern (Django ORM)" style="swimlane;startSize=25;fillColor=#EAF3DE;strokeColor=#97C459;strokeWidth=1.5;fontSize=11;fontStyle=1;fontColor=#27500A;" parent="layered_container" vertex="1">
+                    <mxGeometry x="20" y="630" width="640" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="postgres" value="&lt;b&gt;PostgreSQL 16&lt;/b&gt;&lt;br&gt;+ PostGIS 3.4&lt;br&gt;GIST index&lt;br&gt;ST_Within · ST_MakeEnvelope" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C0DD97;strokeColor=#639922;fontSize=10;" parent="c1_container" vertex="1">
+                    <mxGeometry x="10" y="35" width="160" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="migrations" value="&lt;b&gt;3 Migrations&lt;/b&gt;&lt;br&gt;0001 initial&lt;br&gt;0002 geometria nullable&lt;br&gt;0003 novos critérios" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C0DD97;strokeColor=#639922;fontSize=10;" parent="c1_container" vertex="1">
+                    <mxGeometry x="180" y="35" width="160" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="dados" value="&lt;b&gt;3.673.318 focos&lt;/b&gt;&lt;br&gt;27 estados · 16 meses&lt;br&gt;jan/2025 – abr/2026&lt;br&gt;2.191 áreas ranqueadas" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#639922;strokeColor=#3B6D11;fontSize=10;fontColor=#FFFFFF;" parent="c1_container" vertex="1">
+                    <mxGeometry x="350" y="35" width="160" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="porta_db" value="localhost:5433" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#3B6D11;strokeColor=#27500A;fontSize=10;fontColor=#FFFFFF;" parent="c1_container" vertex="1">
+                    <mxGeometry x="520" y="35" width="110" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="c0_container" value="C0 — Infraestrutura · Docker Compose · 5 containers" style="swimlane;startSize=25;fillColor=#F5F5F5;strokeColor=#B4B2A9;strokeWidth=1.5;fontSize=11;fontStyle=1;fontColor=#444441;" parent="layered_container" vertex="1">
+                    <mxGeometry x="20" y="750" width="640" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="cont_backend" value="backend :8000" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D3D1C7;strokeColor=#888780;fontSize=10;" parent="c0_container" vertex="1">
+                    <mxGeometry x="10" y="28" width="100" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="cont_frontend" value="frontend :5173" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D3D1C7;strokeColor=#888780;fontSize=10;" parent="c0_container" vertex="1">
+                    <mxGeometry x="120" y="28" width="100" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="cont_db" value="db :5433" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D3D1C7;strokeColor=#888780;fontSize=10;" parent="c0_container" vertex="1">
+                    <mxGeometry x="230" y="28" width="100" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="cont_redis" value="redis :6379" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D3D1C7;strokeColor=#888780;fontSize=10;" parent="c0_container" vertex="1">
+                    <mxGeometry x="340" y="28" width="100" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="cont_celery" value="celery worker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D3D1C7;strokeColor=#888780;fontSize=10;" parent="c0_container" vertex="1">
+                    <mxGeometry x="450" y="28" width="100" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="event_container" value="Processamento Assíncrono — Event-Driven&lt;br&gt;Hohpe &amp; Woolf (2003)" style="swimlane;startSize=40;fillColor=#FAEEDA;strokeColor=#FAC775;strokeWidth=2;fontSize=12;fontStyle=1;fontColor=#633806;" parent="1" vertex="1">
+                    <mxGeometry x="1000" y="80" width="420" height="470" as="geometry"/>
+                </mxCell>
+                <mxCell id="evento" value="&lt;b&gt;Evento: POST /api/importar-csv/&lt;/b&gt;&lt;br&gt;Command Pattern · retorna task_id imediato" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAC775;strokeColor=#EF9F27;fontSize=11;" parent="event_container" vertex="1">
+                    <mxGeometry x="20" y="50" width="320" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="redis_broker" value="&lt;b&gt;Redis 7 — Message Broker&lt;/b&gt;&lt;br&gt;Fila de tarefas · redis://redis:6379/0&lt;br&gt;API permanece disponível durante importação" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5C4B3;strokeColor=#D85A30;fontSize=11;" parent="event_container" vertex="1">
+                    <mxGeometry x="20" y="130" width="320" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="celery_worker" value="&lt;b&gt;Celery Worker — tasks.py&lt;/b&gt;&lt;br&gt;@shared_task(bind=True, max_retries=3)&lt;br&gt;&lt;br&gt;importar_csv_inpe.delay(caminho)&lt;br&gt;parse_linha() → normaliza estado/bioma&lt;br&gt;FocoQueimada(**dados) · lote=500&lt;br&gt;bulk_create(ignore_conflicts=True)&lt;br&gt;&lt;br&gt;SRP: tasks.py só importa&lt;br&gt;DIP: abstrações Celery/Django" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5C4B3;strokeColor=#D85A30;fontSize=10;align=left;spacingLeft=10;verticalAlign=top;" parent="event_container" vertex="1">
+                    <mxGeometry x="20" y="220" width="320" height="140" as="geometry"/>
+                </mxCell>
+                <mxCell id="bulk_result" value="&lt;b&gt;PostGIS — bulk insert assíncrono&lt;/b&gt;&lt;br&gt;3.673.318 focos · O(n) · sem timeout de request" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAC775;strokeColor=#EF9F27;fontSize=11;" parent="event_container" vertex="1">
+                    <mxGeometry x="20" y="390" width="320" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="arr_ev1" style="edgeStyle=orthogonalEdgeStyle;" parent="event_container" source="evento" target="redis_broker" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="arr_ev2" style="edgeStyle=orthogonalEdgeStyle;" parent="event_container" source="redis_broker" target="celery_worker" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="arr_ev3" style="edgeStyle=orthogonalEdgeStyle;" parent="event_container" source="celery_worker" target="bulk_result" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="tests_container" value="Testes Automatizados — 41/41 OK · 0.333s&lt;br&gt;Django TestCase · APIClient DRF · banco isolado" style="swimlane;startSize=45;fillColor=#EAF3DE;strokeColor=#97C459;strokeWidth=2;fontSize=12;fontStyle=1;fontColor=#27500A;" parent="1" vertex="1">
+                    <mxGeometry x="1000" y="570" width="360" height="340" as="geometry"/>
+                </mxCell>
+                <mxCell id="unit_tests" value="&lt;b&gt;Unitários (30 testes)&lt;/b&gt;&lt;br&gt;&lt;br&gt;NumeroFuzzyTest (5)&lt;br&gt;· distância vertex, simetria&lt;br&gt;&lt;br&gt;NormalizarFuzzyTest (5)&lt;br&gt;· spread, limites, degenerado&lt;br&gt;&lt;br&gt;TopsisTest (9)&lt;br&gt;· ranking, percentil, CC_i&lt;br&gt;· precipitacao como custo&lt;br&gt;&lt;br&gt;ClassificarNivelTest (4)&lt;br&gt;&lt;br&gt;ModelTests (7)&lt;br&gt;· CRUD, PointField, choices&lt;br&gt;&lt;br&gt;Cobertura:&lt;br&gt;topsis_fuzzy 97% · models 96%&lt;br&gt;&lt;br&gt;→ &lt;b&gt;valida C2 Domínio&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C0DD97;strokeColor=#639922;fontSize=10;align=left;spacingLeft=8;verticalAlign=top;" parent="tests_container" vertex="1">
+                    <mxGeometry x="10" y="55" width="160" height="270" as="geometry"/>
+                </mxCell>
+                <mxCell id="integration_tests" value="&lt;b&gt;Integração (11 testes)&lt;/b&gt;&lt;br&gt;&lt;br&gt;EstatisticasAPITest (2)&lt;br&gt;· filtros, totais, biomas&lt;br&gt;&lt;br&gt;FocosAPITest (4)&lt;br&gt;· GeoJSON, estado, bioma&lt;br&gt;· FeatureCollection type&lt;br&gt;&lt;br&gt;RankingAPITest (2)&lt;br&gt;· nivel_risco, estado&lt;br&gt;&lt;br&gt;TopsisAPITest (3)&lt;br&gt;· POST válido/inválido&lt;br&gt;· com focos reais&lt;br&gt;&lt;br&gt;Ferramenta: APIClient DRF&lt;br&gt;make_foco() · make_area()&lt;br&gt;_alternativa()&lt;br&gt;&lt;br&gt;→ &lt;b&gt;valida C3 API REST&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C0DD97;strokeColor=#639922;fontSize=10;align=left;spacingLeft=8;verticalAlign=top;" parent="tests_container" vertex="1">
+                    <mxGeometry x="185" y="55" width="165" height="270" as="geometry"/>
+                </mxCell>
+                <mxCell id="arr_inpe_event" value="Download CSV · 3.673.318 focos" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#E24B4A;strokeWidth=1.5;fontSize=10;fontColor=#A32D2D;" parent="1" source="inpe" target="event_container" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="arr_inpe_api" value="POST /api/importar-csv/" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#E24B4A;strokeWidth=1;fontSize=10;fontColor=#A32D2D;" parent="1" source="inpe" target="c3_container" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="arr_api_event" value="publica task_id" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#BA7517;strokeWidth=1.5;fontSize=10;" parent="1" source="c3_container" target="event_container" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="arr_celery_db" value="persiste no banco C1" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#BA7517;strokeWidth=1.5;fontSize=10;" parent="1" source="bulk_result" target="c1_container" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="arr_unit_c2" value="valida C2 Domínio" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#639922;strokeWidth=2;fontSize=10;fontColor=#3B6D11;" parent="1" source="unit_tests" target="c2_container" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="arr_int_c3" value="valida C3 API REST" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#639922;strokeWidth=2;fontSize=10;fontColor=#3B6D11;" parent="1" source="integration_tests" target="c3_container" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="arr_tests_db" value="banco de teste isolado" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#639922;strokeWidth=1;fontSize=10;fontColor=#3B6D11;" parent="1" source="tests_container" target="c1_container" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="solid" value="&lt;b&gt;SOLID&lt;/b&gt;&lt;br&gt;S-SRP · O-OCP&lt;br&gt;L-LSP · I-ISP · D-DIP&lt;br&gt;Martin (2008, 2017)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CECBF6;strokeColor=#7F77DD;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="940" width="150" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="restful" value="&lt;b&gt;RESTful API&lt;/b&gt;&lt;br&gt;Stateless · Client-Server&lt;br&gt;Uniform Interface&lt;br&gt;Fielding (2000)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9FE1CB;strokeColor=#1D9E75;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="940" width="150" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="layered_badge" value="&lt;b&gt;Layered Arch.&lt;/b&gt;&lt;br&gt;C4·C3·C2·C1·C0&lt;br&gt;Desacoplamento&lt;br&gt;Bass et al. (2012)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B5D4F4;strokeColor=#378ADD;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="360" y="940" width="150" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="event_badge" value="&lt;b&gt;Event-Driven&lt;/b&gt;&lt;br&gt;Command · Queue&lt;br&gt;Consumer · Async&lt;br&gt;Hohpe &amp; Woolf (2003)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAC775;strokeColor=#EF9F27;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="520" y="940" width="150" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="gof_badge" value="&lt;b&gt;Design Patterns GoF&lt;/b&gt;&lt;br&gt;Strategy · Decorator&lt;br&gt;Adapter · Facade&lt;br&gt;Gamma et al. (1994)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5C4B3;strokeColor=#D85A30;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="680" y="940" width="150" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="topsis_badge" value="&lt;b&gt;TOPSIS Fuzzy&lt;/b&gt;&lt;br&gt;5 critérios · O(mn)&lt;br&gt;Percentis P₉₀P₇₅P₅₀&lt;br&gt;Chen (2000)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CECBF6;strokeColor=#7F77DD;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="940" width="150" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="clean_badge" value="&lt;b&gt;Clean Code&lt;/b&gt;&lt;br&gt;Nomes significativos&lt;br&gt;41 testes · 95% cobertura&lt;br&gt;Martin (2008)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C0DD97;strokeColor=#639922;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="1000" y="940" width="150" height="80" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
