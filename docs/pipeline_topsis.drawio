@@ -1,0 +1,71 @@
+<mxfile host="65bd71144e">
+    <diagram id="_4B4AlmWClVQbKf4oac-" name="Page-1">
+        <mxGraphModel dx="836" dy="565" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="Pipeline TOPSIS Fuzzy — IgnisGeo" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=20;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="327" y="20" width="1000" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="subtitle" value="Chen (2000) · 6 estágios · O(mn + m log m) · m=2.191 municípios · n=5 critérios" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=12;fontColor=#666666;" parent="1" vertex="1">
+                    <mxGeometry x="327" y="55" width="1000" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="inpe" value="&lt;b&gt;🌐 INPE BDQueimadas&lt;/b&gt;&lt;br&gt;Fonte externa pública&lt;br&gt;queimadas.dgi.inpe.br&lt;br&gt;&lt;br&gt;CSV padrão:&lt;br&gt;DataHora · Estado · Municipio&lt;br&gt;Bioma · FRP · RiscoFogo&lt;br&gt;DiaSemChuva · Precipitacao&lt;br&gt;Latitude · Longitude" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCEBEB;strokeColor=#E24B4A;strokeWidth=2;dashed=1;dashPattern=8 4;fontSize=11;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="300" width="200" height="180" as="geometry"/>
+                </mxCell>
+                <mxCell id="arr_inpe_e1" value="download CSV" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#E24B4A;strokeWidth=2;dashed=1;fontSize=11;fontColor=#A32D2D;" parent="1" source="inpe" target="e1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" value="&lt;b&gt;E1 — Aquisição e Parsing&lt;/b&gt;&lt;br&gt;&lt;br&gt;tasks.py · parse_linha()&lt;br&gt;&lt;br&gt;· Lê CSV linha a linha&lt;br&gt;· normalizar_estado() → UF 2 letras&lt;br&gt;· normalizar_bioma() → choices&lt;br&gt;· Trata RiscoFogo &lt; 0 → 0.0&lt;br&gt;· DiaSemChuva &lt; 0 → None&lt;br&gt;· Precipitacao &lt; 0 → None&lt;br&gt;· Point(lon, lat, srid=4326)&lt;br&gt;&lt;br&gt;Celery Worker · bulk_create(lote=500)&lt;br&gt;ignore_conflicts=True&lt;br&gt;&lt;br&gt;3.673.318 focos · 27 estados" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCEBEB;strokeColor=#E24B4A;strokeWidth=2;fontSize=11;align=left;spacingLeft=12;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="280" y="240" width="260" height="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="arr_e1_e2" value="FocoQueimada → PostGIS" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#5F5E5A;strokeWidth=2;fontSize=11;" parent="1" source="e1" target="e2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2" value="&lt;b&gt;E2 — Agregação por Município&lt;/b&gt;&lt;br&gt;&lt;br&gt;views.py · calcular_topsis_view()&lt;br&gt;&lt;br&gt;GROUP BY municipio, estado, bioma&lt;br&gt;&lt;br&gt;.annotate(&lt;br&gt;  total_focos = Count(&#39;id&#39;),&lt;br&gt;  frp_media = Avg(&#39;frp&#39;),&lt;br&gt;  risco_historico_medio = Avg(&#39;risco_historico&#39;),&lt;br&gt;  dias_sem_chuva_medio = Avg(&#39;dias_sem_chuva&#39;),&lt;br&gt;  precipitacao_media = Avg(&#39;precipitacao&#39;)&lt;br&gt;)&lt;br&gt;&lt;br&gt;Filtros ativos: estado · bioma&lt;br&gt;data_inicio · data_fim · bbox&lt;br&gt;&lt;br&gt;Matriz D[m × n]&lt;br&gt;m=2.191 municípios · n=5 critérios" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAEEDA;strokeColor=#FAC775;strokeWidth=2;fontSize=11;align=left;spacingLeft=12;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="580" y="240" width="260" height="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="arr_e2_e3" value="alternativas[m × n]" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#5F5E5A;strokeWidth=2;fontSize=11;" parent="1" source="e2" target="e3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e3" value="&lt;b&gt;E3 — Fuzzificação e Ponderação&lt;/b&gt;&lt;br&gt;&lt;br&gt;topsis_fuzzy.py&lt;br&gt;&lt;br&gt;normalizar_fuzzy(v, min, max):&lt;br&gt;  norm = (v - min) / (max - min)&lt;br&gt;  TFN(a, b, c) = (norm-δ, norm, norm+δ)&lt;br&gt;  δ = 0.10 · clamp [0, 1]&lt;br&gt;&lt;br&gt;Pesos linguísticos (Chen, 2000):&lt;br&gt;  Muito alto = (0.75, 1.0, 1.0)&lt;br&gt;  Alto       = (0.50, 0.75, 1.0)&lt;br&gt;  Médio      = (0.25, 0.50, 0.75)&lt;br&gt;&lt;br&gt;CRITERIOS_CUSTO = {precipitacao}&lt;br&gt;  val_inv = max - v + min → invertida&lt;br&gt;&lt;br&gt;Matriz ponderada:&lt;br&gt;  Ṽᵢⱼ = w̃ⱼ ⊗ r̃ᵢⱼ = (wₐrₐ, wᵦrᵦ, w꜀r꜀)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEEDFE;strokeColor=#AFA9EC;strokeWidth=2;fontSize=11;align=left;spacingLeft=12;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="880" y="240" width="260" height="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="arr_e3_e4" value="matriz Ṽ[m × n]" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#5F5E5A;strokeWidth=2;fontSize=11;" parent="1" source="e3" target="e4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e4" value="&lt;b&gt;E4 — Soluções Ideais e Distâncias&lt;/b&gt;&lt;br&gt;&lt;br&gt;Solução ideal positiva:&lt;br&gt;  A⁺ = (1, 1, 1) para todo j&lt;br&gt;&lt;br&gt;Solução ideal negativa:&lt;br&gt;  A⁻ = (0, 0, 0) para todo j&lt;br&gt;&lt;br&gt;Distância vertex (Chen, 2000):&lt;br&gt;  d(Ã, B̃) = √(⅓[(a₁-a₂)²+(b₁-b₂)²+(c₁-c₂)²])&lt;br&gt;&lt;br&gt;d⁺ᵢ = Σⱼ d(Ṽᵢⱼ, A⁺ⱼ)&lt;br&gt;d⁻ᵢ = Σⱼ d(Ṽᵢⱼ, A⁻ⱼ)&lt;br&gt;&lt;br&gt;Validado por:&lt;br&gt;  test_distancia_formula_vertex()&lt;br&gt;  test_distancia_identico_eh_zero()&lt;br&gt;  test_distancia_simetrica()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1F5EE;strokeColor=#5DCAA5;strokeWidth=2;fontSize=11;align=left;spacingLeft=12;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="1180" y="240" width="260" height="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="arr_e4_e5" value="d⁺ᵢ · d⁻ᵢ por município" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#5F5E5A;strokeWidth=2;fontSize=11;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="e4" target="e5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e5" value="&lt;b&gt;E5 — Coeficiente de Similaridade CC&lt;/b&gt;&lt;br&gt;&lt;br&gt;CCᵢ = d⁻ᵢ / (d⁺ᵢ + d⁻ᵢ)&lt;br&gt;&lt;br&gt;CCᵢ ∈ [0, 1]&lt;br&gt;CCᵢ → 1 : maior risco&lt;br&gt;CCᵢ → 0 : menor risco&lt;br&gt;&lt;br&gt;Intervalo empírico observado:&lt;br&gt;  [0.16 ; 0.51]&lt;br&gt;&lt;br&gt;Ordenação decrescente de CCᵢ&lt;br&gt;&lt;br&gt;Validado por:&lt;br&gt;  test_score_entre_zero_e_um()&lt;br&gt;  test_area_maior_risco_tem_ranking_1()&lt;br&gt;  test_ranking_sequencial()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E6F1FB;strokeColor=#85B7EB;strokeWidth=2;fontSize=11;align=left;spacingLeft=12;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="880" y="620" width="260" height="280" as="geometry"/>
+                </mxCell>
+                <mxCell id="arr_e5_e6" value="ranking ordenado" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#5F5E5A;strokeWidth=2;fontSize=11;" parent="1" source="e5" target="e6" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="760" y="760"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e6" value="&lt;b&gt;E6 — Classificação por Percentis&lt;/b&gt;&lt;br&gt;&lt;br&gt;classificar_por_percentil(resultado)&lt;br&gt;&lt;br&gt;P₉₀ → CRÍTICO  (top 10%)&lt;br&gt;P₇₅ → ALTO     (10% – 25%)&lt;br&gt;P₅₀ → MÉDIO    (25% – 50%)&lt;br&gt;     → BAIXO    (abaixo 50%)&lt;br&gt;&lt;br&gt;Por que percentis e não thresholds?&lt;br&gt;· TOPSIS é ordenação relativa&lt;br&gt;· Intervalo CC comprimido [0.16;0.51]&lt;br&gt;· Thresholds fixos (≥0.75) → 0 críticos&lt;br&gt;· Percentis: distribuição proporcional&lt;br&gt;· Se dados mudam → auto-ajuste&lt;br&gt;&lt;br&gt;Resultado com 2.191 municípios:&lt;br&gt;  ~219 Críticos · ~328 Altos&lt;br&gt;  ~547 Médios  · ~1.097 Baixos&lt;br&gt;&lt;br&gt;Validado por:&lt;br&gt;  test_distribuicao_percentil()&lt;br&gt;  test_percentil_proporcional()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAF3DE;strokeColor=#97C459;strokeWidth=2;fontSize=11;align=left;spacingLeft=12;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="580" y="620" width="260" height="340" as="geometry"/>
+                </mxCell>
+                <mxCell id="arr_e6_result" value="persiste em AreaRisco" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#5F5E5A;strokeWidth=2;fontSize=11;" parent="1" source="e6" target="result" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="result" value="&lt;b&gt;Resultado — Ranking TOPSIS Fuzzy&lt;/b&gt;&lt;br&gt;&lt;br&gt;AreaRisco.objects.bulk_create(novas_areas)&lt;br&gt;&lt;br&gt;#1  ARAPIRACA/AL/CAATINGA       0.4332  CRÍTICO&lt;br&gt;#2  MONTIVIDIU/GO/CERRADO        0.4184  CRÍTICO&lt;br&gt;#3  TEOTÔNIO VILELA/AL/CAATINGA  0.4148  CRÍTICO&lt;br&gt;#4  CAMPO ALEGRE/AL/MATA_ATL.    0.4131  CRÍTICO&lt;br&gt;#5  ABADIA DE GOIÁS/GO/CERRADO   0.4095  CRÍTICO&lt;br&gt;&lt;br&gt;GET /api/ranking/  →  Vue 3 PainelRanking&lt;br&gt;GET /api/areas-risco/geojson/  →  Leaflet" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#639922;strokeColor=#3B6D11;strokeWidth=2;fontSize=11;fontColor=#FFFFFF;align=left;spacingLeft=12;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="280" y="620" width="260" height="280" as="geometry"/>
+                </mxCell>
+                <mxCell id="criterios_leg" value="&lt;b&gt;5 Critérios — CSV INPE BDQueimadas&lt;/b&gt;&lt;br&gt;&lt;br&gt;C1  total_focos            Muito alto  Benefício&lt;br&gt;C2  frp_media              Muito alto  Benefício&lt;br&gt;C3  risco_historico_medio  Alto        Benefício&lt;br&gt;C4  dias_sem_chuva_medio   Alto        Benefício  ✓&lt;br&gt;C5  precipitacao_media     Médio       Custo      ✓&lt;br&gt;&lt;br&gt;✓ = substitui vento_ms e ndvi (ausentes no CSV padrão INPE)&lt;br&gt;C5 é critério de custo: val_inv = max - v + min" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CECBF6;strokeColor=#534AB7;strokeWidth=1.5;fontSize=11;align=left;spacingLeft=10;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="1180" y="620" width="360" height="180" as="geometry"/>
+                </mxCell>
+                <mxCell id="refs" value="Referências: Chen (2000) · Bass et al. (2012) · Fielding (2000) · Gamma et al. (1994) · INPE BDQueimadas" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=10;fontColor=#888888;" parent="1" vertex="1">
+                    <mxGeometry x="280" y="980" width="1260" height="20" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
