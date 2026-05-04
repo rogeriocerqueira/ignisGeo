@@ -4,6 +4,7 @@ from django.db.models import Avg, Count
 from rest_framework import generics, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 from django.views.decorators.csrf import csrf_exempt
 
 from .models import FocoQueimada, AreaRisco
@@ -17,6 +18,14 @@ from .topsis_fuzzy import calcular_topsis_fuzzy
 from .tasks import importar_csv_inpe
 
 
+# ── Paginação para o ranking ──────────────────────────────────
+class RankingPagination(PageNumberPagination):
+    page_size                = 10
+    page_size_query_param    = "page_size"   # ?page_size=20
+    max_page_size            = 100
+
+
+# ─────────────────────────────────────────────────────────────
 class FocosGeoJSONView(generics.ListAPIView):
     serializer_class = FocoQueimadaGeoSerializer
     pagination_class = None
@@ -74,6 +83,7 @@ class AreasRiscoGeoJSONView(generics.ListAPIView):
 
 class RankingView(generics.ListAPIView):
     serializer_class = AreaRiscoRankingSerializer
+    pagination_class = RankingPagination          # ← ativa paginação de 10 em 10
 
     def get_queryset(self):
         qs     = AreaRisco.objects.all()
@@ -107,7 +117,6 @@ def calcular_topsis_view(request):
     estado_filtro   = request.data.get("estado")
     bioma_filtro    = request.data.get("bioma")
 
-    # ── Validação e parse das datas ──
     from datetime import datetime
 
     if data_inicio_str:
@@ -132,22 +141,20 @@ def calcular_topsis_view(request):
     else:
         data_fim = None
 
-    # ── Queryset com filtros ativos ──
     qs = FocoQueimada.objects.all()
     if data_inicio:   qs = qs.filter(data_hora__date__gte=data_inicio)
     if data_fim:      qs = qs.filter(data_hora__date__lte=data_fim)
     if estado_filtro: qs = qs.filter(estado=estado_filtro.upper())
     if bioma_filtro:  qs = qs.filter(bioma=bioma_filtro)
 
-    # ── Agregação por município → matriz de decisão D[m×n] ──
     metricas = (
         qs.values("municipio", "estado", "bioma")
         .annotate(
-            total_focos=Count("id"),                        # C1
-            frp_media=Avg("frp"),                           # C2
-            risco_historico_medio=Avg("risco_historico"),   # C3
-            dias_sem_chuva_medio=Avg("dias_sem_chuva"),     # C4
-            precipitacao_media=Avg("precipitacao"),         # C5
+            total_focos=Count("id"),
+            frp_media=Avg("frp"),
+            risco_historico_medio=Avg("risco_historico"),
+            dias_sem_chuva_medio=Avg("dias_sem_chuva"),
+            precipitacao_media=Avg("precipitacao"),
         )
         .filter(total_focos__gte=1)
     )
@@ -158,10 +165,9 @@ def calcular_topsis_view(request):
             status=status.HTTP_200_OK,
         )
 
-    # ── Monta lista de alternativas ──
     alternativas = [
         {
-            "nome": f"{m['municipio']}/{m['estado']}/{m['bioma']}",
+            "nome":                  f"{m['municipio']}/{m['estado']}/{m['bioma']}",
             "municipio":             m["municipio"],
             "estado":                m["estado"],
             "bioma":                 m["bioma"],
@@ -176,7 +182,6 @@ def calcular_topsis_view(request):
 
     resultado = calcular_topsis_fuzzy(alternativas)
 
-    # ── Resolve datas para persistência ──
     if not data_inicio or not data_fim:
         primeiro = FocoQueimada.objects.order_by("data_hora").first()
         ultimo   = FocoQueimada.objects.order_by("-data_hora").first()
@@ -187,7 +192,6 @@ def calcular_topsis_view(request):
             ultimo.data_hora.date() if ultimo else date.today()
         )
 
-    # ── Limpa ranking anterior e salva ──
     AreaRisco.objects.all().delete()
 
     novas_areas = [
