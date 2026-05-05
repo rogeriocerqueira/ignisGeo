@@ -1,32 +1,22 @@
 from rest_framework import serializers
-from rest_framework_gis.serializers import GeoFeatureModelSerializer, GeometryField
+from rest_framework_gis.serializers import GeoFeatureModelSerializer
 from .models import FocoQueimada, AreaRisco
 
 
 class FocoQueimadaGeoSerializer(GeoFeatureModelSerializer):
-    """Serializa focos de queimada como GeoJSON Feature."""
-
     class Meta:
         model = FocoQueimada
         geo_field = "localizacao"
         fields = [
-            "id",
-            "localizacao",
-            "data_hora",
-            "municipio",
-            "estado",
-            "bioma",
-            "frp",
-            "risco_historico",
-            "dias_sem_chuva",
-            "precipitacao",
-            "satelite",
+            "id", "localizacao", "data_hora",
+            "municipio", "estado", "bioma",
+            "frp", "risco_historico",
+            "dias_sem_chuva", "precipitacao", "satelite",
         ]
 
 
 class FocoQueimadaListSerializer(serializers.ModelSerializer):
-    """Serializer simples (sem GeoJSON) para listagens rápidas."""
-    latitude = serializers.FloatField(read_only=True)
+    latitude  = serializers.FloatField(read_only=True)
     longitude = serializers.FloatField(read_only=True)
 
     class Meta:
@@ -39,7 +29,6 @@ class FocoQueimadaListSerializer(serializers.ModelSerializer):
 
 
 class AreaRiscoGeoSerializer(GeoFeatureModelSerializer):
-    """Serializa áreas de risco como GeoJSON Feature com todos os atributos."""
     nivel_risco_display = serializers.CharField(
         source="get_nivel_risco_display", read_only=True
     )
@@ -48,28 +37,17 @@ class AreaRiscoGeoSerializer(GeoFeatureModelSerializer):
         model = AreaRisco
         geo_field = "geometria"
         fields = [
-            "id",
-            "geometria",
-            "nome",
-            "estado",
-            "bioma",
-            "score_topsis",
-            "ranking",
-            "nivel_risco",
-            "nivel_risco_display",
-            "total_focos",
-            "frp_media",
-            "risco_historico_medio",
-            "dias_sem_chuva",
-            "precipitacao",
-            "periodo_inicio",
-            "periodo_fim",
+            "id", "geometria", "nome", "estado", "bioma",
+            "score_topsis", "ranking", "nivel_risco",
+            "nivel_risco_display", "total_focos", "frp_media",
+            "risco_historico_medio", "dias_sem_chuva_medio",
+            "precipitacao_media", "periodo_inicio", "periodo_fim",
             "atualizado_em",
         ]
 
 
 class AreaRiscoRankingSerializer(serializers.ModelSerializer):
-    """Serializer para o painel de ranking (sem geometria para ser leve)."""
+    """Ranking completo — inclui todos os critérios do TOPSIS."""
     nivel_risco_display = serializers.CharField(
         source="get_nivel_risco_display", read_only=True
     )
@@ -78,7 +56,11 @@ class AreaRiscoRankingSerializer(serializers.ModelSerializer):
         model = AreaRisco
         fields = [
             "id", "nome", "estado", "bioma",
-            "score_topsis", "ranking", "nivel_risco",
-            "nivel_risco_display", "total_focos",
-            "frp_media", "periodo_inicio", "periodo_fim",
+            "score_topsis", "ranking",
+            "nivel_risco", "nivel_risco_display",
+            "total_focos", "frp_media",
+            "risco_historico_medio",       # ← C3
+            "dias_sem_chuva_medio",        # ← C4
+            "precipitacao_media",          # ← C5
+            "periodo_inicio", "periodo_fim",
         ]
