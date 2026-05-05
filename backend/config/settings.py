@@ -43,9 +43,11 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": dj_database_url.config(
         default="postgis://queimadas_user:queimadas_pass@localhost:5432/queimadas",
-        engine="django.contrib.gis.db.backends.postgis",
+        conn_max_age=600,
     )
 }
+# Garante o motor GIS caso a URL não comece explicitamente com 'postgis://'
+DATABASES["default"]["ENGINE"] = "django.contrib.gis.db.backends.postgis"
 
 # Celery
 CELERY_BROKER_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
