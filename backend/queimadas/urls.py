@@ -20,4 +20,7 @@ urlpatterns = [
     # Gráficos — dados dinâmicos
     path("serie-temporal/", views.serie_temporal_view,  name="serie-temporal"),
     path("graficos-dados/", views.graficos_dados_view,  name="graficos-dados"),
+
+    # Análise estatística
+    path("correlacao/",     views.correlacao_view,      name="correlacao"),
 ]

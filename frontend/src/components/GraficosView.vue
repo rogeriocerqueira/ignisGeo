@@ -46,7 +46,7 @@
           <span class="card-titulo">Top 10 Municípios — Ranking TOPSIS Fuzzy</span>
           <span class="card-badge">CCᵢ ∈ [0,1]</span>
         </div>
-        <canvas ref="c3" class="canvas" style="height:280px"></canvas>
+        <canvas ref="c3" class="canvas" style="height:340px"></canvas>
         <p class="card-nota">Classificação por percentis P₉₀ P₇₅ P₅₀ · todos Crítico</p>
       </div>
     </div>
@@ -81,17 +81,19 @@
             <label class="toggle">
               <input type="checkbox" v-model="mostrarGauss" @change="redesenharG6" />
               <span class="toggle-slider"></span>
-              <span class="toggle-label">Curva de Gauss</span>
+              <span class="toggle-label">Curva Normal (dist. total)</span>
             </label>
             <span class="card-badge">Histograma</span>
           </div>
         </div>
         <canvas ref="c6" class="canvas" style="height:260px"></canvas>
         <p class="card-nota">
+          Histograma de <strong>densidade</strong> normalizado ·
           Crítico: {{ niv.CRITICO?.n ?? 0 }} ·
           Alto: {{ niv.ALTO?.n ?? 0 }} ·
           Médio: {{ niv.MEDIO?.n ?? 0 }} ·
-          Baixo: {{ niv.BAIXO?.n ?? 0 }}
+          Baixo: {{ niv.BAIXO?.n ?? 0 }} ·
+          Curva Normal única sobre todos os scores (μ, σ)
         </p>
       </div>
 
@@ -105,11 +107,77 @@
       </div>
     </div>
 
-    <!-- Tabela top 10 -->
+    <!-- Linha 5: Matriz de Correlação + Interpretação -->
+    <div class="linha">
+      <div class="card card-heatmap">
+        <div class="card-header">
+          <span class="card-titulo">Matriz de Correlação entre Critérios TOPSIS</span>
+          <div class="card-controles">
+            <div class="tipo-corr-toggle">
+              <button
+                :class="['tipo-btn', { ativo: tipoCorr === 'pearson' }]"
+                @click="tipoCorr = 'pearson'; redesenharG8()"
+              >Pearson (r)</button>
+              <button
+                :class="['tipo-btn', { ativo: tipoCorr === 'spearman' }]"
+                @click="tipoCorr = 'spearman'; redesenharG8()"
+              >Spearman (ρ)</button>
+            </div>
+            <span class="card-badge">5 × 5</span>
+          </div>
+        </div>
+        <canvas ref="c8" class="canvas" style="height:340px"></canvas>
+        <p class="card-nota">
+          N = {{ dadosCorr.n?.toLocaleString("pt-BR") || "—" }} áreas ·
+          *** p &lt; 0,001 · ** p &lt; 0,01 · * p &lt; 0,05 ·
+          Ref.: Cohen (1988) — |r| ≥ 0,5 grande
+        </p>
+      </div>
+
+      <div class="card card-interp">
+        <div class="card-header">
+          <span class="card-titulo">Independência dos Critérios</span>
+          <span class="card-badge">MCDM</span>
+        </div>
+        <div class="interp-corpo" v-if="dadosCorr.n">
+          <div class="interp-badge" :class="indepClass">
+            <span class="interp-icone">{{ indepIcone }}</span>
+            <span class="interp-texto">{{ indepLabel }}</span>
+          </div>
+          <p class="interp-desc">
+            Correlação média entre critérios:
+            <strong>|r̄| = {{ corrMediaAbs }}</strong>
+          </p>
+          <p class="interp-desc">
+            Em MCDM, critérios correlacionados duplicam peso implicitamente.
+            Valores |r| &lt; 0,5 indicam contribuição independente ao ranking.
+          </p>
+          <ul class="interp-lista">
+            <li v-for="par in parDestaque" :key="par.label" :class="par.cls">
+              <strong>{{ par.label }}:</strong> {{ par.valor }}
+              <span class="interp-star">{{ par.star }}</span>
+            </li>
+          </ul>
+          <div class="interp-ref">
+            <p>Referências:</p>
+            <p>Chen, C.T. (2000). <em>Fuzzy Sets and Systems</em>, 114(1), 1–9.</p>
+            <p>Cohen, J. (1988). <em>Statistical Power Analysis</em>. 2ª ed.</p>
+          </div>
+        </div>
+        <div v-else class="interp-vazio">
+          Carregando análise de correlação...
+        </div>
+      </div>
+    </div>
     <div class="card card-full tabela-card">
       <div class="card-header">
         <span class="card-titulo">Tabela de Resultados — Top 10 Municípios</span>
-        <span class="card-badge">Dados reais do banco</span>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="card-badge">Dados reais do banco</span>
+          <span class="tabela-pag-info" v-if="dadosGraficos.top10?.length">
+            {{ paginaTabela }}/{{ totalPaginasTabela }}
+          </span>
+        </div>
       </div>
       <div class="tabela-wrap">
         <table class="tabela">
@@ -121,7 +189,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="a in dadosGraficos.top10" :key="a.ranking">
+            <tr v-for="a in top10Paginado" :key="a.ranking">
               <td class="rank-cell">#{{ a.ranking }}</td>
               <td class="nome-cell">{{ a.nome }}</td>
               <td class="score-cell">{{ fmt4(a.score_topsis) }}</td>
@@ -144,6 +212,17 @@
           </tbody>
         </table>
       </div>
+      <!-- Controles de paginação -->
+      <div class="tabela-pag-controles" v-if="totalPaginasTabela > 1">
+        <button class="pag-btn" :disabled="paginaTabela <= 1" @click="paginaTabela--">← Anterior</button>
+        <button
+          v-for="p in totalPaginasTabela" :key="p"
+          class="pag-btn"
+          :class="{ 'pag-btn-ativo': p === paginaTabela }"
+          @click="paginaTabela = p"
+        >{{ p }}</button>
+        <button class="pag-btn" :disabled="paginaTabela >= totalPaginasTabela" @click="paginaTabela++">Próxima →</button>
+      </div>
       <p class="tabela-ref">
         Chen, C.T. (2000). Extensions of the TOPSIS for group decision-making under fuzzy environment.
         <em>Fuzzy Sets and Systems</em>, 114(1), 1–9. · Fonte: INPE BDQueimadas (2026)
@@ -163,6 +242,15 @@ const store = useQueimadasStore();
 // Canvas refs
 const c1 = ref(null); const c2 = ref(null); const c3 = ref(null);
 const c4 = ref(null); const c5 = ref(null); const c6 = ref(null);
+
+// Paginação da tabela
+const paginaTabela  = ref(1);
+const TPP           = 5; // itens por página
+
+// Heatmap de correlação
+const c8       = ref(null);
+const tipoCorr = ref("pearson");   // "pearson" | "spearman"
+const dadosCorr = reactive({ rotulos: [], pearson: [], spearman: [], pvalores: [], n: 0 });
 const c7 = ref(null);
 
 const carregando    = ref(false);
@@ -180,6 +268,74 @@ const periodo    = computed(() => {
   const t = dadosGraficos.top10?.[0];
   if (!t) return "";
   return `${t.periodo_inicio || ""} → ${t.periodo_fim || ""}`;
+});
+// Paginação da tabela
+const totalPaginasTabela = computed(() =>
+  Math.ceil((dadosGraficos.top10?.length || 0) / TPP)
+);
+const top10Paginado = computed(() => {
+  const inicio = (paginaTabela.value - 1) * TPP;
+  return (dadosGraficos.top10 || []).slice(inicio, inicio + TPP);
+});
+
+// ── Interpretação automática da matriz de correlação ──
+const matrizAtiva = computed(() =>
+  tipoCorr.value === "pearson" ? dadosCorr.pearson : dadosCorr.spearman
+);
+const corrMediaAbs = computed(() => {
+  const mat = matrizAtiva.value;
+  if (!mat.length) return "—";
+  const K = mat.length;
+  let soma = 0, cnt = 0;
+  for (let i = 0; i < K; i++)
+    for (let j = i + 1; j < K; j++) {
+      soma += Math.abs(mat[i][j]); cnt++;
+    }
+  return cnt ? (soma / cnt).toFixed(3) : "—";
+});
+const indepClass = computed(() => {
+  const v = parseFloat(corrMediaAbs.value);
+  if (isNaN(v)) return "";
+  if (v < 0.3)  return "badge-verde";
+  if (v < 0.5)  return "badge-amar";
+  return "badge-verm";
+});
+const indepIcone = computed(() => {
+  const v = parseFloat(corrMediaAbs.value);
+  if (isNaN(v)) return "?";
+  if (v < 0.3)  return "✓";
+  if (v < 0.5)  return "~";
+  return "⚠";
+});
+const indepLabel = computed(() => {
+  const v = parseFloat(corrMediaAbs.value);
+  if (isNaN(v)) return "Sem dados";
+  if (v < 0.3)  return "Critérios Independentes";
+  if (v < 0.5)  return "Baixa Redundância";
+  return "Redundância Moderada — revisar pesos";
+});
+const parDestaque = computed(() => {
+  const mat = matrizAtiva.value;
+  const pv  = dadosCorr.pvalores;
+  const rot = dadosCorr.rotulos;
+  if (!mat.length || !rot.length) return [];
+  const K    = mat.length;
+  const pares = [];
+  for (let i = 0; i < K; i++)
+    for (let j = i + 1; j < K; j++) {
+      const r  = mat[i][j];
+      const p  = pv[i]?.[j] ?? 1;
+      const star = p < 0.001 ? "***" : p < 0.01 ? "**" : p < 0.05 ? "*" : "";
+      pares.push({
+        label: `${rot[i].split("—")[0].trim()} × ${rot[j].split("—")[0].trim()}`,
+        valor: r.toFixed(3),
+        abs:   Math.abs(r),
+        star,
+        cls:   Math.abs(r) >= 0.5 ? "par-alto" : Math.abs(r) >= 0.3 ? "par-medio" : "par-baixo",
+      });
+    }
+  // Top 4 por |r| decrescente
+  return pares.sort((a, b) => b.abs - a.abs).slice(0, 4);
 });
 
 // ── Paleta ──
@@ -265,9 +421,10 @@ function desenharG1() {
 // G2 — Série temporal
 // ══════════════════════════════════════════════════
 function desenharG2() {
-  const cx = initCanvas(c2, 220); if (!cx) return;
+  const cx = initCanvas(c2, 240); if (!cx) return;
   const W = c2.value.width; const H = c2.value.height;
-  const PL = 52; const PR = 16; const PT = 24; const PB = 28;
+  // PL maior p/ rótulo Y rotacionado; PB maior p/ rótulo X + título
+  const PL = 68; const PR = 16; const PT = 24; const PB = 44;
   const serie = dadosGraficos.serie_temporal;
   if (!serie.length) return;
   const vals  = serie.map((s) => s.focos);
@@ -276,12 +433,32 @@ function desenharG2() {
 
   cx.clearRect(0, 0, W, H);
 
-  const xOf = (i) => PL + (i / Math.max(n - 1, 1)) * (W - PL - PR);
-  const yOf = (v) => PT + (1 - v / maxV) * (H - PT - PB);
+  const drawW = W - PL - PR;
+  const drawH = H - PT - PB;
+  const xOf   = (i) => PL + (i / Math.max(n - 1, 1)) * drawW;
+  const yOf   = (v) => PT + (1 - v / maxV) * drawH;
+
+  // Grade horizontal (4 linhas) — padrão científico
+  cx.font = "9px system-ui"; cx.fillStyle = "#9CA3AF"; cx.textAlign = "right";
+  [0, 0.25, 0.5, 0.75, 1].forEach((frac) => {
+    const v  = Math.round(maxV * frac);
+    const y  = yOf(v);
+    cx.strokeStyle = frac === 0 ? "#D1D5DB" : "#F3F4F6";
+    cx.lineWidth   = frac === 0 ? 1 : 0.7;
+    cx.setLineDash(frac === 0 ? [] : [3, 3]);
+    cx.beginPath(); cx.moveTo(PL, y); cx.lineTo(W - PR, y); cx.stroke();
+    cx.setLineDash([]);
+    const lbl = v >= 1000 ? `${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}k` : v;
+    cx.fillText(lbl, PL - 6, y + 3);
+  });
+
+  // Eixo X — linha base
+  cx.strokeStyle = "#D1D5DB"; cx.lineWidth = 1;
+  cx.beginPath(); cx.moveTo(PL, H - PB); cx.lineTo(W - PR, H - PB); cx.stroke();
 
   // Área
   cx.beginPath();
-  cx.moveTo(xOf(0), yOf(0));
+  cx.moveTo(xOf(0), yOf(vals[0]));
   vals.forEach((v, i) => cx.lineTo(xOf(i), yOf(v)));
   cx.lineTo(xOf(n - 1), H - PB); cx.lineTo(xOf(0), H - PB); cx.closePath();
   cx.fillStyle = "rgba(230,81,0,0.10)"; cx.fill();
@@ -289,7 +466,7 @@ function desenharG2() {
   // Linha
   cx.beginPath(); cx.moveTo(xOf(0), yOf(vals[0]));
   vals.forEach((v, i) => cx.lineTo(xOf(i), yOf(v)));
-  cx.strokeStyle = P.lrj; cx.lineWidth = 2.5; cx.stroke();
+  cx.strokeStyle = P.lrj; cx.lineWidth = 2.5; cx.setLineDash([]); cx.stroke();
 
   // Pontos
   vals.forEach((v, i) => {
@@ -302,56 +479,113 @@ function desenharG2() {
   cx.fillStyle = P.verm; cx.font = "bold 9px system-ui"; cx.textAlign = "center";
   cx.fillText(`▲ ${maxV.toLocaleString("pt-BR")}`, xOf(idxP), yOf(maxV) - 8);
 
-  // Labels X (a cada ~3 meses)
+  // Labels X (a cada 3 meses)
   cx.font = "9px system-ui"; cx.fillStyle = "#6B7280"; cx.textAlign = "center";
   serie.forEach((s, i) => {
     if (i % 3 === 0) cx.fillText(s.mes.slice(0, 7), xOf(i), H - PB + 14);
   });
 
-  // Labels Y
-  cx.textAlign = "right";
-  [0, Math.round(maxV / 2), maxV].forEach((v) => {
-    const lbl = v >= 1000 ? `${Math.round(v / 1000)}k` : v;
-    cx.fillText(lbl, PL - 4, yOf(v) + 3);
-  });
+  // Título eixo X
+  cx.font = "bold 10px system-ui"; cx.fillStyle = "#374151"; cx.textAlign = "center";
+  cx.fillText("Mês", W / 2, H - 4);
+
+  // Título eixo Y — rotacionado 90°
+  cx.save();
+  cx.translate(14, PT + drawH / 2);
+  cx.rotate(-Math.PI / 2);
+  cx.font = "bold 10px system-ui"; cx.fillStyle = "#374151"; cx.textAlign = "center";
+  cx.fillText("Nº de Focos", 0, 0);
+  cx.restore();
 }
 
 // ══════════════════════════════════════════════════
 // G3 — Top 10 barras horizontais
 // ══════════════════════════════════════════════════
 function desenharG3() {
-  const cx = initCanvas(c3, 280); if (!cx) return;
+  const cx = initCanvas(c3, 340); if (!cx) return;
   const W = c3.value.width; const H = c3.value.height;
   const dados = dadosGraficos.top10;
   if (!dados.length) return;
-  const PL = 200; const PR = 90; const PT = 10; const PB = 10;
+
+  // Colunas fixas (px): rank | nome | ← barra → | score
+  const COL_RANK  = 32;   // largura da coluna de rank
+  const COL_NOME  = 195;  // largura da coluna de nome
+  const COL_SCORE = 72;   // largura da coluna de score (direita)
+  const PT = 12; const PB = 12;
+  const BAR_X = COL_RANK + COL_NOME;         // início das barras
+  const BAR_W = W - BAR_X - COL_SCORE;       // largura da área de barras
+
   const n  = dados.length;
-  const bH = (H - PT - PB) / n - 4;
+  const bH = Math.floor((H - PT - PB) / n) - 4;
   const scores  = dados.map((d) => d.score_topsis);
   const minS    = Math.min(...scores) * 0.98;
-  const maxS    = Math.max(...scores) * 1.01;
+  const maxS    = Math.max(...scores) * 1.02;
 
   cx.clearRect(0, 0, W, H);
-  cx.font = "10px system-ui";
+
+  // Cabeçalho de colunas
+  cx.font = "bold 9px system-ui"; cx.fillStyle = "#9CA3AF";
+  cx.textAlign = "center";
+  cx.fillText("Rank",  COL_RANK / 2, PT - 2);
+  cx.textAlign = "left";
+  cx.fillText("Município / UF / Bioma", COL_RANK + 4, PT - 2);
+  cx.textAlign = "left";
+  cx.fillText("Score CCᵢ", BAR_X + BAR_W + 4, PT - 2);
+
+  // Grade vertical (dentro da área de barras)
+  [0.25, 0.5, 0.75, 1].forEach((frac) => {
+    const x = BAR_X + frac * BAR_W;
+    cx.strokeStyle = "#F3F4F6"; cx.lineWidth = 0.7;
+    cx.setLineDash([2, 3]);
+    cx.beginPath(); cx.moveTo(x, PT); cx.lineTo(x, H - PB); cx.stroke();
+    cx.setLineDash([]);
+  });
 
   [...dados].reverse().forEach((d, i) => {
-    const y  = PT + i * ((H - PT - PB) / n);
-    const bW = ((W - PL - PR) * (d.score_topsis - minS)) / (maxS - minS);
-
-    cx.fillStyle = COR_NIVEL[d.nivel_risco] || P.cinza;
-    roundRect(cx, PL, y, Math.max(bW, 2), bH, 3);
-    cx.fill();
-
+    const y    = PT + i * Math.floor((H - PT - PB) / n);
+    const bW   = BAR_W * Math.max(0, (d.score_topsis - minS) / (maxS - minS));
     const rank = n - i;
-    cx.fillStyle = "#9CA3AF"; cx.textAlign = "right"; cx.font = "bold 10px system-ui";
-    cx.fillText(`#${rank}`, PL - 140, y + bH / 2 + 4);
+    const cor  = COR_NIVEL[d.nivel_risco] || P.cinza;
 
-    const nome = d.nome.length > 28 ? d.nome.slice(0, 27) + "…" : d.nome;
-    cx.fillStyle = "#374151"; cx.font = "10px system-ui";
-    cx.fillText(nome, PL - 8, y + bH / 2 + 4);
+    // Faixa de fundo alternada (legibilidade)
+    if (i % 2 === 0) {
+      cx.fillStyle = "#F9FAFB";
+      cx.fillRect(0, y, W, bH + 4);
+    }
 
-    cx.textAlign = "left"; cx.fillStyle = "#374151"; cx.font = "bold 10px system-ui";
-    cx.fillText(Number(d.score_topsis).toFixed(4), PL + bW + 5, y + bH / 2 + 4);
+    // Col rank
+    cx.fillStyle = rank <= 3 ? cor : "#9CA3AF";
+    cx.font = "bold 10px system-ui"; cx.textAlign = "center";
+    cx.fillText(`#${rank}`, COL_RANK / 2, y + bH / 2 + 4);
+
+    // Col nome — clipping para não vazar
+    cx.save();
+    cx.beginPath();
+    cx.rect(COL_RANK + 2, y - 2, COL_NOME - 4, bH + 6);
+    cx.clip();
+    const partes = d.nome.split("/");          // MUNICIPIO / UF / BIOMA
+    const mun    = partes[0] || d.nome;
+    const sub    = partes.slice(1).join("/");  // UF/BIOMA
+    cx.fillStyle = "#111827"; cx.font = "bold 10px system-ui"; cx.textAlign = "left";
+    cx.fillText(mun, COL_RANK + 6, y + bH / 2);
+    if (sub) {
+      cx.fillStyle = "#9CA3AF"; cx.font = "9px system-ui";
+      cx.fillText(sub, COL_RANK + 6, y + bH / 2 + 11);
+    }
+    cx.restore();
+
+    // Barra
+    cx.fillStyle = cor + "CC";
+    roundRect(cx, BAR_X + 2, y + 2, Math.max(bW - 4, 2), bH - 2, 3);
+    cx.fill();
+    // Contorno
+    cx.strokeStyle = cor; cx.lineWidth = 1;
+    roundRect(cx, BAR_X + 2, y + 2, Math.max(bW - 4, 2), bH - 2, 3);
+    cx.stroke();
+
+    // Col score
+    cx.fillStyle = "#1D4ED8"; cx.font = "bold 10px system-ui"; cx.textAlign = "left";
+    cx.fillText(Number(d.score_topsis).toFixed(4), BAR_X + BAR_W + 5, y + bH / 2 + 4);
   });
 }
 
@@ -496,109 +730,192 @@ function desenharG5() {
 }
 
 // ══════════════════════════════════════════════════
-// G6 — Histograma com toggle Gauss
+// G6 — Histograma de densidade + Curva Normal única
+// Correção estatística: Y em densidade (count/N·bW)
+// para que histograma e curva compartilhem a mesma escala.
+// Referência: Chen (2000) · distribuição de CCᵢ ∈ [0,1]
 // ══════════════════════════════════════════════════
 function desenharG6() {
-  const cx = initCanvas(c6, 260); if (!cx) return;
+  const cx = initCanvas(c6, 290); if (!cx) return;
   const W = c6.value.width; const H = c6.value.height;
   const snivel = dadosGraficos.scores_por_nivel;
   if (!snivel || !Object.keys(snivel).length) return;
-  const PL = 46; const PR = 12; const PT = 24; const PB = 28;
+
+  const PL = 62; const PR = 12; const PT = 32; const PB = 50;
+  const drawW = W - PL - PR;
+  const drawH = H - PT - PB;
 
   const NIVEIS = ["CRITICO", "ALTO", "MEDIO", "BAIXO"];
-  const BINS = 40;
+  const BINS   = 40;
 
-  // Coleta todos os scores
-  const allScores = NIVEIS.flatMap((n) => snivel[n]?.scores || []);
+  // ── 1. Coleta todos os scores e estatísticas globais ──
+  const allScores = NIVEIS.flatMap((nv) => snivel[nv]?.scores || []);
   if (!allScores.length) return;
-  const smin = Math.min(...allScores); const smax = Math.max(...allScores);
-  const bW   = (smax - smin) / BINS;
+  const N    = allScores.length;
+  const smin = Math.min(...allScores);
+  const smax = Math.max(...allScores);
+  const binW = (smax - smin) / BINS || 0.001;
 
-  // Histograma empilhado por nível
+  // μ e σ globais (todos os scores)
+  const mu    = allScores.reduce((s, v) => s + v, 0) / N;
+  const sigma = Math.max(
+    0.001,
+    Math.sqrt(allScores.reduce((s, v) => s + (v - mu) ** 2, 0) / N)
+  );
+
+  // ── 2. Histograma normalizado para DENSIDADE ──
+  // density = count / (N × binWidth)  →  ∫ density dx ≈ 1
   const hist = Array.from({ length: BINS }, () => ({}));
-  NIVEIS.forEach((nivel) => {
-    (snivel[nivel]?.scores || []).forEach((s) => {
-      const b = Math.min(BINS - 1, Math.max(0, Math.floor((s - smin) / bW)));
-      hist[b][nivel] = (hist[b][nivel] || 0) + 1;
+  NIVEIS.forEach((nv) => {
+    (snivel[nv]?.scores || []).forEach((s) => {
+      const b = Math.min(BINS - 1, Math.max(0, Math.floor((s - smin) / binW)));
+      hist[b][nv] = (hist[b][nv] || 0) + 1;
     });
   });
-  const maxCount = Math.max(...hist.map((b) => Object.values(b).reduce((a, v) => a + v, 0)));
+  const histDens = hist.map((bin) => {
+    const byNv = {};
+    NIVEIS.forEach((nv) => { byNv[nv] = (bin[nv] || 0) / (N * binW); });
+    byNv._total = NIVEIS.reduce((a, nv) => a + byNv[nv], 0);
+    return byNv;
+  });
+
+  // ── 3. Escala Y: max(histograma, gaussMax) × 1.15 ──
+  const gaussPeak = 1 / (sigma * Math.sqrt(2 * Math.PI));
+  const histPeak  = Math.max(...histDens.map((b) => b._total));
+  const maxDens   = Math.max(gaussPeak, histPeak) * 1.15;
 
   cx.clearRect(0, 0, W, H);
-  const drawW = W - PL - PR;
-  const bPx   = drawW / BINS;
 
-  const xOf = (i) => PL + i * bPx;
-  const yOf = (v) => PT + (1 - v / maxCount) * (H - PT - PB);
+  const xOf  = (s) => PL + ((s - smin) / (smax - smin)) * drawW;
+  const xOfI = (i) => PL + (i / BINS) * drawW;
+  const yOf  = (d) => PT + (1 - d / maxDens) * drawH;
 
-  // Barras empilhadas
-  hist.forEach((bin, i) => {
+  // ── 4. Região de destaque: cauda crítica (> limiar Crítico) ──
+  const limiarCrit = snivel.CRITICO?.min;
+  if (limiarCrit != null) {
+    const x0 = xOf(limiarCrit);
+    const grd = cx.createLinearGradient(x0, 0, W - PR, 0);
+    grd.addColorStop(0, "rgba(183,28,28,0.06)");
+    grd.addColorStop(1, "rgba(183,28,28,0.14)");
+    cx.fillStyle = grd;
+    cx.fillRect(x0, PT, W - PR - x0, drawH);
+    // Rótulo "Região Crítica"
+    cx.fillStyle = P.verm + "AA"; cx.font = "bold 9px system-ui";
+    cx.textAlign = "center";
+    cx.fillText("↑ Crítico", x0 + (W - PR - x0) / 2, PT + 14);
+  }
+
+  // ── 5. Gridlines horizontais ──
+  cx.font = "9px system-ui"; cx.fillStyle = "#9CA3AF"; cx.textAlign = "right";
+  const nTicks = 4;
+  for (let t = 0; t <= nTicks; t++) {
+    const d = (maxDens * t) / nTicks;
+    const y = yOf(d);
+    cx.strokeStyle = t === 0 ? "#D1D5DB" : "#F3F4F6";
+    cx.lineWidth   = t === 0 ? 1 : 0.7;
+    cx.setLineDash(t === 0 ? [] : [3, 3]);
+    cx.beginPath(); cx.moveTo(PL, y); cx.lineTo(W - PR, y); cx.stroke();
+    cx.setLineDash([]);
+    cx.fillText(d.toFixed(1), PL - 4, y + 3);
+  }
+
+  // ── 6. Barras de densidade empilhadas por nível ──
+  histDens.forEach((bin, i) => {
     let base = H - PB;
-    NIVEIS.forEach((nivel) => {
-      const cnt = bin[nivel] || 0;
-      if (!cnt) return;
-      const bH = (cnt / maxCount) * (H - PT - PB);
-      cx.fillStyle = (COR_NIVEL[nivel] || P.cinza) + "CC";
-      cx.fillRect(xOf(i) + 0.5, base - bH, bPx - 1, bH);
-      base -= bH;
+    const bPx = drawW / BINS;
+    NIVEIS.forEach((nv) => {
+      const d = bin[nv] || 0;
+      if (!d) return;
+      const bHpx = (d / maxDens) * drawH;
+      cx.fillStyle = (COR_NIVEL[nv] || P.cinza) + "BB";
+      cx.fillRect(xOfI(i) + 0.5, base - bHpx, bPx - 1, bHpx);
+      base -= bHpx;
     });
   });
 
-  // Curva Gauss por nível (toggle)
+  // ── 7. Curva Normal ÚNICA — mesma escala Y de densidade ──
   if (mostrarGauss.value) {
-    NIVEIS.forEach((nivel) => {
-      const d = snivel[nivel];
-      if (!d?.scores?.length) return;
-      const mu  = d.media;
-      const std = Math.max(
-        0.001,
-        Math.sqrt(d.scores.reduce((s, v) => s + (v - mu) ** 2, 0) / d.scores.length)
-      );
-      const n   = d.scores.length;
-      const amp = (n / (maxCount * std * Math.sqrt(2 * Math.PI))) * bW;
+    // Preenchimento abaixo da curva (área = 1)
+    cx.beginPath();
+    cx.moveTo(PL, H - PB);
+    for (let px_ = PL; px_ <= W - PR; px_++) {
+      const s  = smin + ((px_ - PL) / drawW) * (smax - smin);
+      const d  = (1 / (sigma * Math.sqrt(2 * Math.PI))) *
+                 Math.exp(-0.5 * ((s - mu) / sigma) ** 2);
+      px_ === PL
+        ? cx.lineTo(px_, yOf(d))
+        : cx.lineTo(px_, yOf(d));
+    }
+    cx.lineTo(W - PR, H - PB); cx.closePath();
+    cx.fillStyle = "rgba(31,41,55,0.06)"; cx.fill();
 
-      cx.beginPath();
-      for (let px_ = PL; px_ <= W - PR; px_ += 1) {
-        const s  = smin + ((px_ - PL) / drawW) * (smax - smin);
-        const gv = amp * Math.exp(-0.5 * ((s - mu) / std) ** 2);
-        const gy = yOf(gv);
-        px_ === PL ? cx.moveTo(px_, gy) : cx.lineTo(px_, gy);
-      }
-      cx.strokeStyle = COR_NIVEL[nivel]; cx.lineWidth = 2.5;
+    // Linha da curva
+    cx.beginPath();
+    for (let px_ = PL; px_ <= W - PR; px_++) {
+      const s = smin + ((px_ - PL) / drawW) * (smax - smin);
+      const d = (1 / (sigma * Math.sqrt(2 * Math.PI))) *
+                Math.exp(-0.5 * ((s - mu) / sigma) ** 2);
+      px_ === PL ? cx.moveTo(px_, yOf(d)) : cx.lineTo(px_, yOf(d));
+    }
+    cx.strokeStyle = "#1F2937"; cx.lineWidth = 2.2;
+    cx.setLineDash([]); cx.stroke();
+
+    // Linha μ (média)
+    const xMu = xOf(mu);
+    cx.strokeStyle = "#1F2937"; cx.lineWidth = 1.2; cx.setLineDash([4, 3]);
+    cx.beginPath(); cx.moveTo(xMu, PT + 4); cx.lineTo(xMu, H - PB); cx.stroke();
+    cx.setLineDash([]);
+    cx.fillStyle = "#1F2937"; cx.font = "bold 9px system-ui"; cx.textAlign = "center";
+    cx.fillText(`μ=${mu.toFixed(3)}`, xMu, PT + 2);
+
+    // Linhas μ±σ
+    [mu - sigma, mu + sigma].forEach((s, side) => {
+      if (s < smin || s > smax) return;
+      const x_ = xOf(s);
+      cx.strokeStyle = "#6B7280"; cx.lineWidth = 0.9; cx.setLineDash([2, 4]);
+      cx.beginPath(); cx.moveTo(x_, PT + 18); cx.lineTo(x_, H - PB); cx.stroke();
       cx.setLineDash([]);
-      cx.stroke();
+      cx.fillStyle = "#9CA3AF"; cx.font = "8px system-ui"; cx.textAlign = "center";
+      cx.fillText(side === 0 ? "μ−σ" : "μ+σ", x_, PT + 17);
     });
   }
 
-  // Linhas de percentil
-  NIVEIS.slice(0, 3).forEach((nivel, i) => {
-    const s  = snivel[nivel]?.min;
-    if (s == null) return;
-    const lx = PL + ((s - smin) / (smax - smin)) * drawW;
-    cx.setLineDash([3, 3]);
-    cx.strokeStyle = COR_NIVEL[nivel]; cx.lineWidth = 1;
-    cx.beginPath(); cx.moveTo(lx, PT); cx.lineTo(lx, H - PB); cx.stroke();
-    cx.setLineDash([]);
-  });
-
-  // Labels X
+  // ── 8. Eixo X — valores numéricos + título ──
   cx.font = "9px system-ui"; cx.fillStyle = "#9CA3AF"; cx.textAlign = "center";
-  [smin, (smin + smax) / 2, smax].forEach((s) => {
-    const lx = PL + ((s - smin) / (smax - smin)) * drawW;
+  const nXTicks = 5;
+  for (let t = 0; t <= nXTicks; t++) {
+    const s  = smin + (t / nXTicks) * (smax - smin);
+    const lx = xOf(s);
     cx.fillText(s.toFixed(2), lx, H - PB + 12);
-  });
-  cx.fillText("Score TOPSIS (CCᵢ)", W / 2, H - 4);
+  }
+  cx.font = "bold 10px system-ui"; cx.fillStyle = "#374151";
+  cx.fillText("Score TOPSIS  (CCᵢ)", W / 2, H - PB + 27);
 
-  // Legenda
+  // ── 9. Título eixo Y — rotacionado 90° ──
+  cx.save();
+  cx.translate(13, PT + drawH / 2);
+  cx.rotate(-Math.PI / 2);
+  cx.font = "bold 10px system-ui"; cx.fillStyle = "#374151"; cx.textAlign = "center";
+  cx.fillText("Densidade", 0, 0);
+  cx.restore();
+
+  // ── 10. Legenda no topo ──
   let lx = PL;
-  NIVEIS.forEach((nivel) => {
-    cx.fillStyle = COR_NIVEL[nivel];
-    cx.fillRect(lx, PT - 16, 8, 8);
+  NIVEIS.forEach((nv) => {
+    cx.fillStyle = COR_NIVEL[nv];
+    cx.fillRect(lx, PT - 20, 8, 8);
     cx.fillStyle = "#374151"; cx.font = "9px system-ui"; cx.textAlign = "left";
-    const lbl = `${nivel.charAt(0)}${nivel.slice(1).toLowerCase()} (${snivel[nivel]?.n ?? 0})`;
-    cx.fillText(lbl, lx + 11, PT - 9);
-    lx += cx.measureText(lbl).width + 24;
+    const lbl = `${nv.charAt(0)}${nv.slice(1).toLowerCase()} (n=${snivel[nv]?.n ?? 0})`;
+    cx.fillText(lbl, lx + 11, PT - 13);
+    lx += cx.measureText(lbl).width + 26;
   });
+  // Item legenda curva Normal
+  if (mostrarGauss.value) {
+    cx.strokeStyle = "#1F2937"; cx.lineWidth = 2;
+    cx.beginPath(); cx.moveTo(lx, PT - 17); cx.lineTo(lx + 18, PT - 17); cx.stroke();
+    cx.fillStyle = "#374151"; cx.font = "9px system-ui"; cx.textAlign = "left";
+    cx.fillText(`N(${mu.toFixed(3)}, ${sigma.toFixed(3)})`, lx + 22, PT - 13);
+  }
 }
 
 function redesenharG6() { desenharG6(); }
@@ -684,8 +1001,174 @@ function desenharG7() {
 }
 
 // ══════════════════════════════════════════════════
+// G8 — Heatmap de correlação (Pearson / Spearman)
+// Colormap divergente: azul→branco→vermelho
+// Significância: teste t bilateral, df = N−2
+// ══════════════════════════════════════════════════
+function corrColor(r) {
+  // r ∈ [-1, 1] → divergente azul→branco→vermelho
+  const t = (r + 1) / 2;
+  const lerp = (a, b, f) => Math.round(a + (b - a) * f);
+  let rgb;
+  if (t < 0.5) {
+    const f = t * 2;
+    // azul #1565C0 → branco #F5F5F5
+    rgb = [lerp(21,245,f), lerp(101,245,f), lerp(192,245,f)];
+  } else {
+    const f = (t - 0.5) * 2;
+    // branco #F5F5F5 → vermelho #B71C1C
+    rgb = [lerp(245,183,f), lerp(245,28,f), lerp(245,28,f)];
+  }
+  return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+}
+
+function starStr(pv) {
+  if (pv < 0.001) return "***";
+  if (pv < 0.01)  return "**";
+  if (pv < 0.05)  return "*";
+  return "";
+}
+
+function desenharG8() {
+  const cx = initCanvas(c8, 340); if (!cx) return;
+  const W = c8.value.width; const H = c8.value.height;
+  const mat = tipoCorr.value === "pearson" ? dadosCorr.pearson : dadosCorr.spearman;
+  const pv  = dadosCorr.pvalores;
+  const rot = dadosCorr.rotulos;
+  if (!mat.length || !rot.length) return;
+
+  const K  = mat.length;
+  // Margens: esquerda p/ rótulos Y, baixo p/ rótulos X + barra de cor
+  const PL = 105; const PR = 16; const PT = 20; const PB = 80;
+  const drawW = W - PL - PR;
+  const drawH = H - PT - PB;
+  const cell  = Math.min(drawW / K, drawH / K);
+  // Centraliza a grade
+  const offX  = PL + (drawW - cell * K) / 2;
+  const offY  = PT + (drawH - cell * K) / 2;
+
+  cx.clearRect(0, 0, W, H);
+
+  // ── Células ──
+  for (let i = 0; i < K; i++) {
+    for (let j = 0; j < K; j++) {
+      const r   = mat[i][j];
+      const x0  = offX + j * cell;
+      const y0  = offY + i * cell;
+
+      // Fundo colorido
+      cx.fillStyle = i === j ? "#374151" : corrColor(r);
+      cx.fillRect(x0, y0, cell, cell);
+
+      // Borda
+      cx.strokeStyle = "#E5E7EB"; cx.lineWidth = 0.5;
+      cx.strokeRect(x0, y0, cell, cell);
+
+      if (i === j) {
+        // Diagonal: sigla do critério
+        cx.fillStyle = "#fff";
+        cx.font = "bold 9px system-ui"; cx.textAlign = "center";
+        const sigla = rot[i].split("—")[0].trim(); // "C1", "C2"...
+        cx.fillText(sigla, x0 + cell / 2, y0 + cell / 2 + 3);
+      } else {
+        // Valor de r
+        const textColor = Math.abs(r) > 0.5 ? "#fff" : "#1F2937";
+        cx.fillStyle = textColor;
+        cx.font = `${Math.abs(r) > 0.5 ? "bold " : ""}11px system-ui`;
+        cx.textAlign = "center";
+        cx.fillText(r.toFixed(2), x0 + cell / 2, y0 + cell / 2 + 1);
+
+        // Stars de significância
+        const star = starStr(pv[i]?.[j] ?? 1);
+        if (star) {
+          cx.font = "bold 8px system-ui";
+          cx.fillStyle = Math.abs(r) > 0.5 ? "#FFD700" : P.verm;
+          cx.fillText(star, x0 + cell / 2, y0 + cell / 2 + 11);
+        }
+      }
+    }
+  }
+
+  // ── Rótulos Y (linhas) ──
+  cx.font = "10px system-ui"; cx.fillStyle = "#374151"; cx.textAlign = "right";
+  for (let i = 0; i < K; i++) {
+    const y0 = offY + i * cell + cell / 2 + 3;
+    // Critério completo à esquerda
+    const partes = rot[i].split("—");
+    cx.font = "bold 9px system-ui"; cx.fillStyle = "#6B7280";
+    cx.fillText(partes[0].trim(), offX - 6, y0 - 4);
+    cx.font = "9px system-ui"; cx.fillStyle = "#9CA3AF";
+    cx.fillText((partes[1] || "").trim(), offX - 6, y0 + 6);
+  }
+
+  // ── Rótulos X (colunas) — rotacionados 45° ──
+  cx.save();
+  cx.font = "9px system-ui"; cx.fillStyle = "#374151"; cx.textAlign = "right";
+  for (let j = 0; j < K; j++) {
+    const x0 = offX + j * cell + cell / 2;
+    const y0 = offY + K * cell + 6;
+    cx.save();
+    cx.translate(x0, y0);
+    cx.rotate(-Math.PI / 4);
+    const partes = rot[j].split("—");
+    cx.font = "bold 9px system-ui"; cx.fillStyle = "#374151";
+    cx.fillText(partes[0].trim(), 0, 0);
+    cx.font = "9px system-ui"; cx.fillStyle = "#9CA3AF";
+    cx.fillText((partes[1] || "").trim(), 0, 10);
+    cx.restore();
+  }
+  cx.restore();
+
+  // ── Barra de cor (colorbar) ──
+  const cbY  = H - 22;
+  const cbX  = offX;
+  const cbW  = cell * K;
+  const cbH  = 10;
+  const grad = cx.createLinearGradient(cbX, 0, cbX + cbW, 0);
+  grad.addColorStop(0,   corrColor(-1));
+  grad.addColorStop(0.5, corrColor(0));
+  grad.addColorStop(1,   corrColor(1));
+  cx.fillStyle = grad;
+  cx.fillRect(cbX, cbY, cbW, cbH);
+  cx.strokeStyle = "#D1D5DB"; cx.lineWidth = 0.5;
+  cx.strokeRect(cbX, cbY, cbW, cbH);
+
+  // Ticks da barra
+  cx.font = "8px system-ui"; cx.fillStyle = "#6B7280"; cx.textAlign = "center";
+  [[-1,"−1"], [-0.5,"−0,5"], [0,"0"], [0.5,"0,5"], [1,"1"]].forEach(([v, lbl]) => {
+    const lx = cbX + ((v + 1) / 2) * cbW;
+    cx.fillText(lbl, lx, cbY + cbH + 10);
+  });
+  cx.fillStyle = "#9CA3AF"; cx.font = "8px system-ui"; cx.textAlign = "center";
+  const tipoLabel = tipoCorr.value === "pearson"
+    ? "Correlação de Pearson (r)"
+    : "Correlação de Spearman (ρ)";
+  cx.fillText(tipoLabel, cbX + cbW / 2, cbY - 4);
+
+  // ── Título N ──
+  cx.fillStyle = "#9CA3AF"; cx.font = "9px system-ui"; cx.textAlign = "left";
+  cx.fillText(`n = ${dadosCorr.n.toLocaleString("pt-BR")} áreas`, offX, PT - 4);
+}
+
+function redesenharG8() { requestAnimationFrame(desenharG8); }
+
+// ══════════════════════════════════════════════════
 // Carregamento de dados dinâmicos
 // ══════════════════════════════════════════════════
+async function carregarCorrelacao() {
+  try {
+    const resp = await api.get("/correlacao/");
+    const d    = resp.data;
+    dadosCorr.rotulos  = d.rotulos   || [];
+    dadosCorr.pearson  = d.pearson   || [];
+    dadosCorr.spearman = d.spearman  || [];
+    dadosCorr.pvalores = d.pvalores  || [];
+    dadosCorr.n        = d.n         || 0;
+    requestAnimationFrame(desenharG8);
+  } catch (e) {
+    console.error("Erro ao carregar correlação:", e);
+  }
+}
 async function carregarDados() {
   carregando.value = true;
   try {
@@ -709,14 +1192,14 @@ async function carregarDados() {
 
 function desenharTudo() {
   desenharG1(); desenharG2(); desenharG3(); desenharG4();
-  desenharG5(); desenharG6(); desenharG7();
+  desenharG5(); desenharG6(); desenharG7(); desenharG8();
 }
 
 // Recarrega quando TOPSIS é executado ou filtros mudam
-watch(() => store.rankingAtualizado, () => carregarDados());
-watch(() => store.filtros, () => carregarDados(), { deep: true });
+watch(() => store.rankingAtualizado, () => { carregarDados(); carregarCorrelacao(); });
+watch(() => store.filtros, () => { carregarDados(); carregarCorrelacao(); }, { deep: true });
 
-onMounted(() => carregarDados());
+onMounted(() => { carregarDados(); carregarCorrelacao(); });
 </script>
 
 <style scoped>
@@ -733,12 +1216,12 @@ onMounted(() => carregarDados());
   gap: 12px; margin-bottom: 20px;
 }
 .page-titulo { font-size: 18px; font-weight: 700; color: #111827; margin-bottom: 3px; }
-.page-sub    { font-size: 12px; color: #6B7280; }
+.page-sub    { font-size: 12px; color: #4B5563; }
 .header-badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .badge { font-size: 11px; padding: 3px 10px; border-radius: 999px; font-weight: 500; }
 .badge.azul  { background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; }
 .badge.verde { background: #F0FDF4; color: #15803D; border: 1px solid #BBF7D0; }
-.badge.cinza { background: #F3F4F6; color: #6B7280; border: 1px solid #E5E7EB; }
+.badge.cinza { background: #F3F4F6; color: #4B5563; border: 1px solid #E5E7EB; }
 
 /* Layout em linhas */
 .linha {
@@ -757,9 +1240,9 @@ onMounted(() => carregarDados());
 }
 .card-titulo  { font-size: 13px; font-weight: 600; color: #111827; }
 .card-badge   { font-size: 10px; padding: 2px 8px; background: #F3F4F6;
-                color: #6B7280; border-radius: 999px; white-space: nowrap; }
+                color: #4B5563; border-radius: 999px; white-space: nowrap; }
 .card-controles { display: flex; align-items: center; gap: 10px; }
-.card-nota    { font-size: 10px; color: #9CA3AF; margin-top: 8px; font-style: italic; }
+.card-nota    { font-size: 10px; color: #4B5563; margin-top: 8px; font-style: italic; }
 .canvas       { width: 100% !important; display: block; height: 220px; }
 
 /* Toggle Gauss */
@@ -784,18 +1267,18 @@ onMounted(() => carregarDados());
 .tabela { width: 100%; border-collapse: collapse; font-size: 12px; }
 .tabela th {
   text-align: left; padding: 8px 10px; background: #F9FAFB;
-  color: #6B7280; font-weight: 600; font-size: 10px;
+  color: #4B5563; font-weight: 600; font-size: 10px;
   text-transform: uppercase; letter-spacing: 0.04em;
   border-bottom: 1px solid #E5E7EB; white-space: nowrap;
 }
 .tabela td    { padding: 9px 10px; border-bottom: 1px solid #F3F4F6; color: #374151; }
 .tabela tr:hover td { background: #F9FAFB; }
-.rank-cell  { font-weight: 700; color: #9CA3AF; }
+.rank-cell  { font-weight: 700; color: #4B5563; }
 .nome-cell  { font-weight: 500; color: #111827; max-width: 220px;
               overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .score-cell { font-weight: 700; color: #1D4ED8; font-variant-numeric: tabular-nums; }
-.num-cell   { font-variant-numeric: tabular-nums; color: #6B7280; }
-.vazio-cell { text-align: center; color: #9CA3AF; padding: 24px; font-style: italic; }
+.num-cell   { font-variant-numeric: tabular-nums; color: #374151; }
+.vazio-cell { text-align: center; color: #4B5563; padding: 24px; font-style: italic; }
 
 .nivel-badge { font-size: 9px; font-weight: 600; padding: 2px 7px;
                border-radius: 999px; text-transform: uppercase; }
@@ -804,11 +1287,74 @@ onMounted(() => carregarDados());
 .nivel-medio   { background: #FEFCE8; color: #92400E; }
 .nivel-baixo   { background: #F0FDF4; color: #15803D; }
 
-.tabela-ref { font-size: 10px; color: #9CA3AF; font-style: italic; }
+.tabela-ref { font-size: 10px; color: #4B5563; font-style: italic; }
+
+/* Paginação da tabela */
+.tabela-pag-controles {
+  display: flex; align-items: center; gap: 4px;
+  margin: 10px 0 6px; flex-wrap: wrap;
+}
+.tabela-pag-info {
+  font-size: 11px; color: #4B5563;
+}
+.pag-btn {
+  font-size: 11px; font-weight: 500;
+  padding: 4px 10px; border-radius: 6px; border: 1px solid #E5E7EB;
+  background: #fff; color: #374151; cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.pag-btn:hover:not(:disabled) { background: #F3F4F6; border-color: #D1D5DB; }
+.pag-btn:disabled { opacity: 0.4; cursor: default; }
+.pag-btn-ativo {
+  background: #1D4ED8 !important; color: #fff !important;
+  border-color: #1D4ED8 !important;
+}
 
 /* Responsivo */
 @media (max-width: 860px) {
   .linha { flex-direction: column; }
-  .card-grande, .card-medio { flex: unset; width: 100%; }
+  .card-grande, .card-medio, .card-heatmap, .card-interp { flex: unset; width: 100%; }
 }
+
+/* Heatmap + Interpretação */
+.card-heatmap { flex: 1.5; min-width: 0; }
+.card-interp  { flex: 1;   min-width: 200px; display: flex; flex-direction: column; }
+
+/* Toggle Pearson/Spearman */
+.tipo-corr-toggle { display: flex; background: #F3F4F6; border-radius: 6px;
+                    padding: 2px; gap: 2px; }
+.tipo-btn {
+  font-size: 11px; font-weight: 500; padding: 3px 10px;
+  border: none; background: transparent; border-radius: 4px;
+  color: #4B5563; cursor: pointer; transition: all 0.15s;
+}
+.tipo-btn.ativo { background: #fff; color: #1D4ED8;
+                  box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+
+/* Card de interpretação */
+.interp-corpo { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.interp-badge {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; border-radius: 8px; font-weight: 600; font-size: 13px;
+}
+.badge-verde { background: #F0FDF4; color: #15803D; }
+.badge-amar  { background: #FEFCE8; color: #92400E; }
+.badge-verm  { background: #FEF2F2; color: #B91C1C; }
+.interp-icone { font-size: 16px; }
+.interp-texto { font-size: 12px; font-weight: 600; }
+.interp-desc  { font-size: 11px; color: #374151; line-height: 1.5; margin: 0; }
+.interp-lista { list-style: none; padding: 0; margin: 0;
+                display: flex; flex-direction: column; gap: 5px; }
+.interp-lista li { font-size: 11px; padding: 5px 8px;
+                   border-radius: 5px; color: #374151; }
+.par-alto   { background: #FEF2F2; border-left: 3px solid #EF4444; }
+.par-medio  { background: #FFFBEB; border-left: 3px solid #F59E0B; }
+.par-baixo  { background: #F0FDF4; border-left: 3px solid #22C55E; }
+.interp-star { color: #EF4444; font-size: 10px; margin-left: 3px; }
+.interp-ref { font-size: 9px; color: #4B5563; font-style: italic;
+              margin-top: auto; padding-top: 8px;
+              border-top: 1px solid #F3F4F6; }
+.interp-ref p { margin: 1px 0; }
+.interp-vazio { font-size: 12px; color: #4B5563;
+                text-align: center; margin: auto; padding: 20px; }
 </style>

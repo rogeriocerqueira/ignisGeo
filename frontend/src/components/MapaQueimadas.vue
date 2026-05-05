@@ -56,19 +56,31 @@ const legendaItens = [
   { cor: "#16a34a", label: "Baixo (abaixo 50%)"  },
 ];
 
+// ── Mapeamento nível → cor ─────────────────────────────────────────────
+// CORREÇÃO: corPorNivel não estava definido, causando ReferenceError
+const corPorNivel = {
+  CRITICO:      "#b91c1c",
+  ALTO:         "#c2410c",
+  MEDIO:        "#f97316",
+  BAIXO:        "#16a34a",
+};
+
 function corFoco(frp) {
-  if (frp >= 200) return "#7c2d12";  // marrom escuro (muito intenso)
-  if (frp >= 100) return "#b91c1c";  // vermelho (intenso)
-  if (frp >= 50)  return "#ea580c";  // laranja escuro
-  return "#f97316";                   // laranja padrão
+  if (frp >= 200) return "#7c2d12";
+  if (frp >= 100) return "#b91c1c";
+  if (frp >= 50)  return "#ea580c";
+  return "#f97316";
 }
 
-function fitFocos() {
-  if (!camadaFocos) return;
-  const bounds = camadaFocos.getBounds();
-  if (bounds.isValid()) mapa.fitBounds(bounds, { padding: [40, 40], maxZoom: 8 });
-}                   
-// ---- Inicializa o mapa ----
+function fitCamada(camada) {
+  if (!camada) return;
+  try {
+    const bounds = camada.getBounds();
+    if (bounds.isValid()) mapa.fitBounds(bounds, { padding: [40, 40], maxZoom: 8 });
+  } catch (_) { /* camada sem getBounds (ex: heatmap) */ }
+}
+
+// ── Inicializa o mapa ─────────────────────────────────────────────────
 onMounted(async () => {
   mapa = L.map(mapaRef.value, {
     center: [-14.235, -51.925],
@@ -81,7 +93,6 @@ onMounted(async () => {
     maxZoom: 18,
   }).addTo(mapa);
 
-  // Aguarda o mapa renderizar antes de plotar os dados
   await nextTick();
 
   if (store.focosGeoJSON?.features?.length) renderizarFocos();
@@ -92,7 +103,7 @@ onUnmounted(() => {
   if (mapa) mapa.remove();
 });
 
-// ---- Watchers — dispara só quando há dados válidos ----
+// ── Watchers ──────────────────────────────────────────────────────────
 watch(() => store.focosGeoJSON, (geojson) => {
   if (geojson?.features?.length && mapa) renderizarFocos();
 });
@@ -101,7 +112,7 @@ watch(() => store.areasGeoJSON, (geojson) => {
   if (geojson?.features?.length && mapa) renderizarAreas();
 });
 
-// ---- Renderização dos focos ----
+// ── Renderização dos focos ────────────────────────────────────────────
 function renderizarFocos() {
   if (!store.focosGeoJSON?.features?.length) return;
 
@@ -114,11 +125,11 @@ function renderizarFocos() {
     pointToLayer(feature, latlng) {
       const frp = feature.properties.frp ?? 0;
       return L.circleMarker(latlng, {
-        radius: Math.max(4, Math.min(12, frp / 30)),
-        fillColor: corFoco(frp),
-        color: "#fff",
-        weight: 0.8,
-        opacity: 0.9,
+        radius:      Math.max(4, Math.min(12, frp / 30)),
+        fillColor:   corFoco(frp),
+        color:       "#fff",
+        weight:      0.8,
+        opacity:     0.9,
         fillOpacity: 0.75,
       });
     },
@@ -144,10 +155,10 @@ function renderizarFocos() {
 
   import("leaflet.heat").then(() => {
     camadaHeatmap = L.heatLayer(pontos, {
-      radius: 25,
-      blur: 20,
+      radius:  25,
+      blur:    20,
       maxZoom: 10,
-      max: 1.0,
+      max:     1.0,
       gradient: { 0.1: "#16a34a", 0.4: "#ca8a04", 0.7: "#ea580c", 1.0: "#7c2d12" },
     });
     if (camadaAtiva.value === "heatmap") camadaHeatmap.addTo(mapa);
@@ -155,59 +166,86 @@ function renderizarFocos() {
 
   if (camadaAtiva.value === "focos") {
     camadaFocos.addTo(mapa);
-    fitFocos();
+    fitCamada(camadaFocos);
   }
 }
 
-// ---- Renderização das áreas de risco ----
+// ── Renderização das áreas de risco ───────────────────────────────────
+// CORREÇÃO PRINCIPAL:
+// 1. geometria agora é Point (Centroid do Union dos focos) — não Polygon
+// 2. usa pointToLayer em vez de style() (style é só para polígonos/linhas)
+// 3. raio proporcional ao score TOPSIS; cor por nível de risco
+// 4. corPorNivel agora está definido (era ReferenceError antes)
 function renderizarAreas() {
   if (!store.areasGeoJSON?.features?.length) return;
 
   if (camadaAreas) mapa.removeLayer(camadaAreas);
 
-  // Filtra features sem geometria (áreas calculadas sem shapefile de municípios)
-  const geojsonValido = {
-    ...store.areasGeoJSON,
-    features: store.areasGeoJSON.features.filter(
-      (f) => f.geometry !== null && f.geometry !== undefined
-    ),
-  };
+  // Filtra features sem geometria (fallback defensivo)
+  const features = store.areasGeoJSON.features.filter(
+    (f) => f.geometry !== null && f.geometry !== undefined
+  );
 
-  if (!geojsonValido.features.length) return;
+  if (!features.length) {
+    console.warn("[IgnisGeo] areasGeoJSON chegou sem geometria — rode o TOPSIS novamente.");
+    return;
+  }
+
+  const geojsonValido = { ...store.areasGeoJSON, features };
 
   camadaAreas = L.geoJSON(geojsonValido, {
-    style(feature) {
-      const cor = corPorNivel[feature.properties.nivel_risco] ?? "#888";
-      return {
-        fillColor: cor,
-        fillOpacity: 0.45,
-        color: cor,
-        weight: 1.5,
-        opacity: 0.85,
-      };
+    // pointToLayer: necessário para GeoJSON do tipo Point
+    pointToLayer(feature, latlng) {
+      const p     = feature.properties;
+      const nivel = p.nivel_risco ?? "BAIXO";
+      const cor   = corPorNivel[nivel] ?? "#888";
+      const score = p.score_topsis ?? 0;
+
+      // Raio: 8–22 px, proporcional ao score TOPSIS (CCᵢ)
+      // score ∈ [0,1] → circulos maiores = risco maior
+      const raio = 8 + score * 14;
+
+      return L.circleMarker(latlng, {
+        radius:      raio,
+        fillColor:   cor,
+        color:       "#ffffff",
+        weight:      1.5,
+        opacity:     1,
+        fillOpacity: 0.75,
+      });
     },
+
     onEachFeature(feature, layer) {
-      const p = feature.properties;
+      const p   = feature.properties;
+      const cor = corPorNivel[p.nivel_risco] ?? "#888";
+
       layer.bindPopup(`
         <div class="popup-area">
           <strong>${p.nome}</strong><br/>
           Bioma: ${p.bioma}<br/>
-          Score TOPSIS: <strong>${(p.score_topsis ?? 0).toFixed(3)}</strong><br/>
-          Nível: <strong style="color:${corPorNivel[p.nivel_risco]}">${p.nivel_risco_display}</strong><br/>
-          Focos: ${p.total_focos}<br/>
+          Score TOPSIS: <strong>${(p.score_topsis ?? 0).toFixed(4)}</strong><br/>
+          Nível: <strong style="color:${cor}">${p.nivel_risco_display ?? p.nivel_risco}</strong><br/>
+          Focos: ${(p.total_focos ?? 0).toLocaleString("pt-BR")}<br/>
           FRP médio: ${(p.frp_media ?? 0).toFixed(1)} MW<br/>
-          Ranking: #${p.ranking}
+          Risco histórico: ${(p.risco_historico_medio ?? 0).toFixed(3)}<br/>
+          Dias s/ chuva: ${(p.dias_sem_chuva_medio ?? 0).toFixed(1)}<br/>
+          Precipitação: ${(p.precipitacao_media ?? 0).toFixed(2)} mm<br/>
+          Ranking: <strong>#${p.ranking}</strong>
         </div>
       `);
-      layer.on("mouseover", () => layer.setStyle({ fillOpacity: 0.7 }));
-      layer.on("mouseout",  () => layer.setStyle({ fillOpacity: 0.45 }));
+
+      layer.on("mouseover", () => layer.setStyle({ fillOpacity: 0.95, weight: 2.5 }));
+      layer.on("mouseout",  () => layer.setStyle({ fillOpacity: 0.75, weight: 1.5 }));
     },
   });
 
-  if (camadaAtiva.value === "areas") camadaAreas.addTo(mapa);
+  if (camadaAtiva.value === "areas") {
+    camadaAreas.addTo(mapa);
+    fitCamada(camadaAreas);
+  }
 }
 
-// ---- Alterna camadas ----
+// ── Alterna camadas ───────────────────────────────────────────────────
 function alternarCamada(nova) {
   camadaAtiva.value = nova;
 
@@ -215,12 +253,9 @@ function alternarCamada(nova) {
     if (c && mapa.hasLayer(c)) mapa.removeLayer(c);
   });
 
-  if (nova === "focos" && camadaFocos) {
-    camadaFocos.addTo(mapa);
-    fitFocos();
-  }
-  if (nova === "heatmap" && camadaHeatmap) camadaHeatmap.addTo(mapa);
-  if (nova === "areas"   && camadaAreas)   camadaAreas.addTo(mapa);
+  if (nova === "focos"   && camadaFocos)   { camadaFocos.addTo(mapa);   fitCamada(camadaFocos); }
+  if (nova === "heatmap" && camadaHeatmap) { camadaHeatmap.addTo(mapa); }
+  if (nova === "areas"   && camadaAreas)   { camadaAreas.addTo(mapa);   fitCamada(camadaAreas); }
 }
 </script>
 

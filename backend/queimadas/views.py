@@ -397,3 +397,162 @@ def estatisticas_view(request):
         "areas_alto_risco": areas_alto,
         "por_bioma":        por_bioma,
     })
+
+
+# ── NOVO: Matriz de correlação entre os 5 critérios TOPSIS ───────────
+@api_view(["GET"])
+def correlacao_view(request):
+    """
+    GET /api/correlacao/
+    Retorna matrizes de correlação de Pearson e Spearman entre os 5 critérios
+    do TOPSIS Fuzzy, calculadas sobre os dados reais das áreas ranqueadas.
+
+    Saída:
+      - rotulos:   nomes dos critérios
+      - pearson:   matriz 5×5 de correlações lineares
+      - spearman:  matriz 5×5 de correlações de posto
+      - pvalores:  matriz 5×5 de p-valores (teste t, bilateral)
+      - n:         número de áreas utilizadas
+
+    Referência: Cohen (1988) — limites de efeito |r|: 0.1 pequeno,
+                0.3 médio, 0.5 grande.
+    """
+    import math
+
+    CAMPOS  = [
+        "total_focos",
+        "frp_media",
+        "risco_historico_medio",
+        "dias_sem_chuva_medio",
+        "precipitacao_media",
+    ]
+    ROTULOS = [
+        "C1 — Focos",
+        "C2 — FRP",
+        "C3 — Risco Hist.",
+        "C4 — Dias s/ Chuva",
+        "C5 — Precipitação",
+    ]
+
+    # Aplica filtros opcionais para consistência com os outros gráficos
+    qs = AreaRisco.objects.all()
+    nivel  = request.query_params.get("nivel_risco")
+    estado = request.query_params.get("estado")
+    bioma  = request.query_params.get("bioma")
+    if nivel:  qs = qs.filter(nivel_risco=nivel.upper())
+    if estado: qs = qs.filter(estado=estado.upper())
+    if bioma:  qs = qs.filter(bioma=bioma)
+
+    rows = list(qs.values_list(*CAMPOS))
+    N    = len(rows)
+    K    = len(CAMPOS)
+
+    if N < 3:
+        return Response(
+            {"erro": "Amostras insuficientes para calcular correlação (mín. 3)."},
+            status=400,
+        )
+
+    # ── Helpers estatísticos (Python puro, sem NumPy) ──────────────
+    def media(arr):
+        return sum(arr) / len(arr)
+
+    def pearson_r(x, y):
+        mx, my = media(x), media(y)
+        num = sum((xi - mx) * (yi - my) for xi, yi in zip(x, y))
+        dx  = sum((xi - mx) ** 2 for xi in x)
+        dy  = sum((yi - my) ** 2 for yi in y)
+        den = math.sqrt(dx * dy)
+        return num / den if den > 1e-12 else 0.0
+
+    def rankear(arr):
+        """Rank médio para empates (Spearman padrão)."""
+        idx_ord = sorted(range(len(arr)), key=lambda i: arr[i])
+        ranks   = [0.0] * len(arr)
+        i = 0
+        while i < len(idx_ord):
+            j = i
+            while j < len(idx_ord) - 1 and arr[idx_ord[j]] == arr[idx_ord[j + 1]]:
+                j += 1
+            avg = (i + j) / 2.0 + 1.0
+            for k_ in range(i, j + 1):
+                ranks[idx_ord[k_]] = avg
+            i = j + 1
+        return ranks
+
+    def pvalor(r, n):
+        """
+        P-valor bilateral do teste t para correlação de Pearson.
+        H0: ρ = 0 | Estatística: t = r√(n-2)/√(1-r²)
+        Aproximação de Abramowitz & Stegun para a CDF da t-Student.
+        """
+        if abs(r) >= 1.0:
+            return 0.0
+        df = n - 2
+        t  = r * math.sqrt(df) / math.sqrt(1.0 - r * r)
+        # Aproximação da CDF t via regularized incomplete beta
+        # Para df grandes (>30) converge para Normal; usamos a fórmula exata
+        x   = df / (df + t * t)
+        # Série de Lentz para Ix(a,b): a=df/2, b=0.5
+        # Simplificação: para df ≥ 2 usamos a aproximação de Hill (1970)
+        a   = df / 2.0
+        b   = 0.5
+        # Regularized incomplete beta via continued fraction (5 iterações)
+        def ibeta(xx, aa, bb):
+            if xx == 0: return 0.0
+            if xx == 1: return 1.0
+            lbeta = (math.lgamma(aa) + math.lgamma(bb) - math.lgamma(aa + bb))
+            front = math.exp(math.log(xx) * aa + math.log(1 - xx) * bb - lbeta) / aa
+            # Método de Lentz
+            cf = 1.0; d = 1.0 - (aa + bb) * xx / (aa + 1); d = 1.0 / d if abs(d) > 1e-30 else 1e30
+            c = 1.0; f = d
+            for m in range(1, 50):
+                # Passo 2m-1
+                num1 = m * (bb - m) * xx / ((aa + 2*m - 1) * (aa + 2*m))
+                d = 1.0 + num1 * d; d = 1.0 / d if abs(d) > 1e-30 else 1e30
+                c = 1.0 + num1 / c if abs(c) > 1e-30 else 1e30
+                f *= c * d
+                # Passo 2m
+                num2 = -(aa + m) * (aa + bb + m) * xx / ((aa + 2*m) * (aa + 2*m + 1))
+                d = 1.0 + num2 * d; d = 1.0 / d if abs(d) > 1e-30 else 1e30
+                c = 1.0 + num2 / c if abs(c) > 1e-30 else 1e30
+                delta = c * d; f *= delta
+                if abs(delta - 1.0) < 1e-10: break
+            return front * f
+
+        p_one = 0.5 * ibeta(x, a, b)   # P(T > |t|) unilateral
+        return round(min(2.0 * p_one, 1.0), 6)  # bilateral
+
+    # ── Colunas numéricas ──────────────────────────────────────────
+    cols = [
+        [float(row[j] or 0) for row in rows]
+        for j in range(K)
+    ]
+    ranked = [rankear(c) for c in cols]
+
+    # ── Matrizes 5×5 ──────────────────────────────────────────────
+    mat_p   = []  # Pearson
+    mat_s   = []  # Spearman
+    mat_pv  = []  # p-valores (sobre Pearson)
+
+    for i in range(K):
+        row_p  = []
+        row_s  = []
+        row_pv = []
+        for j in range(K):
+            if i == j:
+                row_p.append(1.0); row_s.append(1.0); row_pv.append(0.0)
+            else:
+                rp = round(pearson_r(cols[i],   cols[j]),   4)
+                rs = round(pearson_r(ranked[i], ranked[j]), 4)
+                pv = pvalor(rp, N)
+                row_p.append(rp); row_s.append(rs); row_pv.append(pv)
+        mat_p.append(row_p); mat_s.append(row_s); mat_pv.append(row_pv)
+
+    return Response({
+        "rotulos":  ROTULOS,
+        "pearson":  mat_p,
+        "spearman": mat_s,
+        "pvalores": mat_pv,
+        "n":        N,
+    })
