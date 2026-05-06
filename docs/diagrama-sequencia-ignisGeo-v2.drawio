@@ -1,0 +1,292 @@
+<mxfile host="65bd71144e">
+    <diagram name="Diagrama de Sequência — IgnisGeo v2 (SIGE 2026)" id="0">
+        <mxGraphModel dx="836" dy="672" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="760" pageHeight="900" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="p1" value="&lt;b&gt;:Frontend&lt;/b&gt;&lt;br/&gt;Vue 3 + Leaflet" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E6F1FB;strokeColor=#185FA5;fontColor=#0C447C;fontSize=11;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="20" y="20" width="110" height="46" as="geometry"/>
+                </mxCell>
+                <mxCell id="p2" value="&lt;b&gt;:API Django&lt;/b&gt;&lt;br/&gt;DRF + GeoDjango" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1F5EE;strokeColor=#0F6E56;fontColor=#085041;fontSize=11;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="178" y="20" width="110" height="46" as="geometry"/>
+                </mxCell>
+                <mxCell id="p3" value="&lt;b&gt;:Serviço TOPSIS&lt;/b&gt;&lt;br/&gt;Celery + NumPy/SciPy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAEEDA;strokeColor=#854F0B;fontColor=#633806;fontSize=11;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="334" y="20" width="114" height="46" as="geometry"/>
+                </mxCell>
+                <mxCell id="p4" value="&lt;b&gt;:PostGIS&lt;/b&gt;&lt;br/&gt;PostgreSQL + geo" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEEDFE;strokeColor=#534AB7;fontColor=#3C3489;fontSize=11;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="498" y="20" width="114" height="46" as="geometry"/>
+                </mxCell>
+                <mxCell id="ll1" value="" style="endArrow=none;dashed=1;dashPattern=4 3;strokeColor=#85B7EB;strokeWidth=1;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="75" y="66" as="sourcePoint"/>
+                        <mxPoint x="75" y="820" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="ll2" value="" style="endArrow=none;dashed=1;dashPattern=4 3;strokeColor=#5DCAA5;strokeWidth=1;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="233" y="66" as="sourcePoint"/>
+                        <mxPoint x="233" y="820" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="ll3" value="" style="endArrow=none;dashed=1;dashPattern=4 3;strokeColor=#EF9F27;strokeWidth=1;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="391" y="66" as="sourcePoint"/>
+                        <mxPoint x="391" y="820" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="ll4" value="" style="endArrow=none;dashed=1;dashPattern=4 3;strokeColor=#AFA9EC;strokeWidth=1;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="555" y="66" as="sourcePoint"/>
+                        <mxPoint x="555" y="820" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="f1h" value="① Importação de dados — CSV INPE  (assíncrona via Celery)" style="text;html=1;strokeColor=#D3D1C7;fillColor=#F1EFE8;align=left;verticalAlign=middle;spacingLeft=6;fontSize=11;fontColor=#5F5E5A;" parent="1" vertex="1">
+                    <mxGeometry x="12" y="82" width="640" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="ab_api_f1" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E1F5EE;strokeColor=#0F6E56;strokeWidth=1;" parent="1" vertex="1">
+                    <mxGeometry x="228" y="108" width="10" height="152" as="geometry"/>
+                </mxCell>
+                <mxCell id="ab_svc_f1" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FAEEDA;strokeColor=#854F0B;strokeWidth=1;" parent="1" vertex="1">
+                    <mxGeometry x="386" y="136" width="10" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="ab_pg_f1" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EEEDFE;strokeColor=#534AB7;strokeWidth=1;" parent="1" vertex="1">
+                    <mxGeometry x="550" y="178" width="10" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="m1" value="POST /api/importar-csv/" style="endArrow=block;endFill=1;strokeColor=#185FA5;strokeWidth=1.5;fontSize=10;fontColor=#333333;labelBackgroundColor=none;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="77" y="118" as="sourcePoint"/>
+                        <mxPoint x="228" y="118" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m2" value="dispatch importar_csv.delay()" style="endArrow=open;endFill=0;strokeColor=#854F0B;strokeWidth=1.5;fontSize=10;fontColor=#333333;labelBackgroundColor=none;" parent="1" edge="1">
+                    <mxGeometry x="0.3784" y="16" relative="1" as="geometry">
+                        <mxPoint x="238" y="150" as="sourcePoint"/>
+                        <mxPoint x="386" y="150" as="targetPoint"/>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m3" value="{ task_id } — resposta imediata" style="endArrow=open;endFill=0;dashed=1;dashPattern=5 3;strokeColor=#B4B2A9;strokeWidth=1;fontSize=10;fontColor=#777775;labelBackgroundColor=none;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="228" y="158" as="sourcePoint"/>
+                        <mxPoint x="77" y="158" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m4" value="bulk_create focos (500/lote)" style="endArrow=block;endFill=1;strokeColor=#854F0B;strokeWidth=1.5;fontSize=10;fontColor=#333333;labelBackgroundColor=none;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="396" y="178" as="sourcePoint"/>
+                        <mxPoint x="550" y="178" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m5" value="OK — n registros inseridos" style="endArrow=open;endFill=0;dashed=1;dashPattern=5 3;strokeColor=#B4B2A9;strokeWidth=1;fontSize=10;fontColor=#777775;labelBackgroundColor=none;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="550" y="200" as="sourcePoint"/>
+                        <mxPoint x="396" y="200" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="alt1_box" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF8F8;strokeColor=#CC3333;strokeWidth=1;dashed=1;" parent="1" vertex="1">
+                    <mxGeometry x="12" y="216" width="640" height="46" as="geometry"/>
+                </mxCell>
+                <mxCell id="alt1_tab" value="alt" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FADDDD;strokeColor=#CC3333;fontSize=9;fontStyle=1;fontColor=#AA2222;" parent="1" vertex="1">
+                    <mxGeometry x="12" y="216" width="26" height="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="alt1_cond" value="[ DB timeout ou falha na inserção ]" style="text;html=1;fontSize=10;fontStyle=2;fontColor=#CC3333;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="42" y="217" width="240" height="13" as="geometry"/>
+                </mxCell>
+                <mxCell id="alt1_err" value="503 Service Unavailable" style="endArrow=open;endFill=0;dashed=1;dashPattern=5 3;strokeColor=#CC3333;strokeWidth=1;fontSize=10;fontColor=#CC3333;labelBackgroundColor=none;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="228" y="248" as="sourcePoint"/>
+                        <mxPoint x="77" y="248" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="f2h" value="② Cálculo TOPSIS Fuzzy — análise multicritério  (lógica delegada ao Serviço — Separation of Concerns)" style="text;html=1;strokeColor=#D3D1C7;fillColor=#F1EFE8;align=left;verticalAlign=middle;spacingLeft=6;fontSize=11;fontColor=#5F5E5A;" parent="1" vertex="1">
+                    <mxGeometry x="12" y="274" width="640" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="ab_api_f2" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E1F5EE;strokeColor=#0F6E56;strokeWidth=1;" parent="1" vertex="1">
+                    <mxGeometry x="228" y="300" width="10" height="200" as="geometry"/>
+                </mxCell>
+                <mxCell id="ab_pg_f2a" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EEEDFE;strokeColor=#534AB7;strokeWidth=1;" parent="1" vertex="1">
+                    <mxGeometry x="550" y="324" width="10" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="ab_svc_f2" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FAEEDA;strokeColor=#854F0B;strokeWidth=1;" parent="1" vertex="1">
+                    <mxGeometry x="386" y="366" width="10" height="58" as="geometry"/>
+                </mxCell>
+                <mxCell id="ab_pg_f2b" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EEEDFE;strokeColor=#534AB7;strokeWidth=1;" parent="1" vertex="1">
+                    <mxGeometry x="550" y="440" width="10" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="m6" value="POST /api/calcular-topsis/" style="endArrow=block;endFill=1;strokeColor=#185FA5;strokeWidth=1.5;fontSize=10;fontColor=#333333;labelBackgroundColor=none;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="77" y="310" as="sourcePoint"/>
+                        <mxPoint x="228" y="310" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m7" value="aggregate métricas por município" style="endArrow=block;endFill=1;strokeColor=#185FA5;strokeWidth=1.5;fontSize=10;fontColor=#333333;labelBackgroundColor=none;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="238" y="324" as="sourcePoint"/>
+                        <mxPoint x="550" y="324" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m8" value="focos, FRP, risco, vento, NDVI" style="endArrow=open;endFill=0;dashed=1;dashPattern=5 3;strokeColor=#B4B2A9;strokeWidth=1;fontSize=10;fontColor=#777775;labelBackgroundColor=none;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="550" y="348" as="sourcePoint"/>
+                        <mxPoint x="238" y="348" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m9" value="calcular_topsis(dados)" style="endArrow=block;endFill=1;strokeColor=#0F6E56;strokeWidth=1.5;fontSize=10;fontColor=#0F6E56;labelBackgroundColor=none;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="238" y="366" as="sourcePoint"/>
+                        <mxPoint x="386" y="366" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m10" value="calcular_topsis_fuzzy() — NumPy + SciPy" style="endArrow=block;endFill=1;strokeColor=#854F0B;strokeWidth=1.5;fontSize=10;fontColor=#854F0B;labelBackgroundColor=none;align=left;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="391" y="384" as="sourcePoint"/>
+                        <mxPoint x="391" y="406" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="422" y="384"/>
+                            <mxPoint x="422" y="406"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m11" value="{ scores, ranking }" style="endArrow=open;endFill=0;dashed=1;dashPattern=5 3;strokeColor=#B4B2A9;strokeWidth=1;fontSize=10;fontColor=#777775;labelBackgroundColor=none;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="386" y="422" as="sourcePoint"/>
+                        <mxPoint x="238" y="422" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m12" value="save AreaRisco — score + ranking + nível" style="endArrow=block;endFill=1;strokeColor=#185FA5;strokeWidth=1.5;fontSize=10;fontColor=#333333;labelBackgroundColor=none;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="238" y="440" as="sourcePoint"/>
+                        <mxPoint x="550" y="440" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m13" value="OK — persistido" style="endArrow=open;endFill=0;dashed=1;dashPattern=5 3;strokeColor=#B4B2A9;strokeWidth=1;fontSize=10;fontColor=#777775;labelBackgroundColor=none;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="550" y="464" as="sourcePoint"/>
+                        <mxPoint x="238" y="464" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m14" value="{ ranking, top_5, scores }" style="endArrow=open;endFill=0;dashed=1;dashPattern=5 3;strokeColor=#B4B2A9;strokeWidth=1;fontSize=10;fontColor=#777775;labelBackgroundColor=none;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="228" y="488" as="sourcePoint"/>
+                        <mxPoint x="77" y="488" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="alt2_box" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFDF5;strokeColor=#CC6600;strokeWidth=1;dashed=1;" parent="1" vertex="1">
+                    <mxGeometry x="12" y="500" width="640" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="alt2_tab" value="alt" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FDEFD8;strokeColor=#CC6600;fontSize=9;fontStyle=1;fontColor=#994400;" parent="1" vertex="1">
+                    <mxGeometry x="12" y="500" width="26" height="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="alt2_cond" value="[ sem focos no período selecionado ]" style="text;html=1;fontSize=10;fontStyle=2;fontColor=#CC6600;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="42" y="501" width="220" height="13" as="geometry"/>
+                </mxCell>
+                <mxCell id="alt2_err" value="204 No Content" style="endArrow=open;endFill=0;dashed=1;dashPattern=5 3;strokeColor=#CC6600;strokeWidth=1;fontSize=10;fontColor=#CC6600;labelBackgroundColor=none;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="228" y="532" as="sourcePoint"/>
+                        <mxPoint x="77" y="532" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="f3h" value="③ Visualização no mapa — GeoJSON + Leaflet  (renderização client-side)" style="text;html=1;strokeColor=#D3D1C7;fillColor=#F1EFE8;align=left;verticalAlign=middle;spacingLeft=6;fontSize=11;fontColor=#5F5E5A;" parent="1" vertex="1">
+                    <mxGeometry x="12" y="556" width="640" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="ab_api_f3" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E1F5EE;strokeColor=#0F6E56;strokeWidth=1;" parent="1" vertex="1">
+                    <mxGeometry x="228" y="582" width="10" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="ab_pg_f3" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EEEDFE;strokeColor=#534AB7;strokeWidth=1;" parent="1" vertex="1">
+                    <mxGeometry x="550" y="602" width="10" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="ab_fe_f3" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E6F1FB;strokeColor=#185FA5;strokeWidth=1;" parent="1" vertex="1">
+                    <mxGeometry x="70" y="656" width="10" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="m15" value="GET /api/focos/geojson/?bioma=CERRADO" style="endArrow=block;endFill=1;strokeColor=#185FA5;strokeWidth=1.5;fontSize=10;fontColor=#333333;labelBackgroundColor=none;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="77" y="592" as="sourcePoint"/>
+                        <mxPoint x="228" y="592" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m16" value="SELECT + ST_Within(bbox) LIMIT 5000" style="endArrow=block;endFill=1;strokeColor=#185FA5;strokeWidth=1.5;fontSize=10;fontColor=#333333;labelBackgroundColor=none;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="235" y="602" as="sourcePoint"/>
+                        <mxPoint x="547" y="602" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m17" value="GeoJSON features (lat, lon, FRP, bioma…)" style="endArrow=open;endFill=0;dashed=1;dashPattern=5 3;strokeColor=#B4B2A9;strokeWidth=1;fontSize=10;fontColor=#777775;labelBackgroundColor=none;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="547" y="626" as="sourcePoint"/>
+                        <mxPoint x="235" y="626" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m18" value="FeatureCollection GeoJSON" style="endArrow=open;endFill=0;dashed=1;dashPattern=5 3;strokeColor=#B4B2A9;strokeWidth=1;fontSize=10;fontColor=#777775;labelBackgroundColor=none;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="228" y="650" as="sourcePoint"/>
+                        <mxPoint x="77" y="650" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m19" value="Leaflet: renderiza pontos + heatmap + polígonos (client-side)" style="endArrow=block;endFill=1;strokeColor=#185FA5;strokeWidth=1.5;fontSize=10;fontColor=#185FA5;labelBackgroundColor=none;align=left;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="75" y="664" as="sourcePoint"/>
+                        <mxPoint x="75" y="682" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="106" y="664"/>
+                            <mxPoint x="106" y="682"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="alt3_box" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFDF5;strokeColor=#CC6600;strokeWidth=1;dashed=1;" parent="1" vertex="1">
+                    <mxGeometry x="12" y="696" width="640" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="alt3_tab" value="alt" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FDEFD8;strokeColor=#CC6600;fontSize=9;fontStyle=1;fontColor=#994400;" parent="1" vertex="1">
+                    <mxGeometry x="12" y="696" width="26" height="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="alt3_cond" value="[ focos = ∅ para o filtro aplicado ]" style="text;html=1;fontSize=10;fontStyle=2;fontColor=#CC6600;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="42" y="697" width="220" height="13" as="geometry"/>
+                </mxCell>
+                <mxCell id="alt3_err" value="exibe mensagem: &quot;Nenhum foco encontrado&quot;" style="endArrow=open;endFill=0;dashed=1;dashPattern=5 3;strokeColor=#CC6600;strokeWidth=1;fontSize=10;fontColor=#CC6600;labelBackgroundColor=none;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="228" y="728" as="sourcePoint"/>
+                        <mxPoint x="77" y="728" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="leg_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9F9F9;strokeColor=#CCCCCC;strokeWidth=1;" parent="1" vertex="1">
+                    <mxGeometry x="12" y="752" width="640" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg_title" value="Legenda" style="text;html=1;fontSize=10;fontStyle=1;fontColor=#444444;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="18" y="754" width="50" height="14" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg1" value="Req. síncrona" style="endArrow=block;endFill=1;strokeColor=#185FA5;strokeWidth=1.5;fontSize=10;fontColor=#444444;labelBackgroundColor=none;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="18" y="780" as="sourcePoint"/>
+                        <mxPoint x="56" y="780" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="leg2" value="Req. assíncrona" style="endArrow=open;endFill=0;strokeColor=#854F0B;strokeWidth=1.5;fontSize=10;fontColor=#444444;labelBackgroundColor=none;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="136" y="780" as="sourcePoint"/>
+                        <mxPoint x="174" y="780" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="leg3" value="Retorno / resposta" style="endArrow=open;endFill=0;dashed=1;dashPattern=5 3;strokeColor=#B4B2A9;strokeWidth=1;fontSize=10;fontColor=#444444;labelBackgroundColor=none;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="272" y="780" as="sourcePoint"/>
+                        <mxPoint x="310" y="780" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="leg4" value="Delegação ao Serviço" style="endArrow=block;endFill=1;strokeColor=#0F6E56;strokeWidth=1.5;fontSize=10;fontColor=#444444;labelBackgroundColor=none;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="406" y="780" as="sourcePoint"/>
+                        <mxPoint x="444" y="780" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="leg5" value="Retorno de erro" style="endArrow=open;endFill=0;dashed=1;dashPattern=5 3;strokeColor=#CC3333;strokeWidth=1;fontSize=10;fontColor=#444444;labelBackgroundColor=none;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="536" y="780" as="sourcePoint"/>
+                        <mxPoint x="574" y="780" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="arch_note" value="★  calcular_topsis_fuzzy() foi movido para o Serviço TOPSIS (Entidade 3), preservando a Separation of Concerns: o Controlador orquestra, o Serviço calcula." style="text;html=1;strokeColor=#0F6E56;fillColor=#F0FAF5;align=left;verticalAlign=middle;spacingLeft=6;fontSize=10;fontColor=#085041;rounded=1;" parent="1" vertex="1">
+                    <mxGeometry x="12" y="812" width="640" height="28" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
