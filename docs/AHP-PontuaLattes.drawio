@@ -1,0 +1,109 @@
+<mxfile host="app.diagrams.net" modified="2026-05-06T00:00:00.000Z" agent="Claude" version="21.0.0">
+  <diagram name="AHP-PontuaLattes" id="ahp-pontualattes">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- OBJETIVO -->
+        <mxCell id="obj" value="Seleção de Candidatos&#xa;ao Intercâmbio UEFS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="384" y="40" width="280" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- CRITÉRIOS -->
+        <mxCell id="c1" value="Desempenho&#xa;Acadêmico&#xa;(Peso 4)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="60" y="180" width="160" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="c2" value="Plano de&#xa;Trabalho&#xa;(Peso 2)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="270" y="180" width="160" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="c3" value="Currículo&#xa;Lattes&#xa;(Peso 2)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="480" y="180" width="160" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="c4" value="Carta de&#xa;Recomendação&#xa;(Peso 2)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="700" y="180" width="160" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- SUBCRITÉRIOS DESEMPENHO -->
+        <mxCell id="s1a" value="Percentil&#xa;até 10%&#xa;→ nota 10" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="20" y="350" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s1b" value="Percentil&#xa;10-25%&#xa;→ nota 8" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="155" y="350" width="120" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- SUBCRITÉRIOS PLANO -->
+        <mxCell id="s2a" value="Estrutura&#xa;do texto&#xa;(até 2 pts)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="230" y="350" width="110" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s2b" value="Motivação&#xa;(até 3 pts)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="350" y="350" width="110" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- SUBCRITÉRIOS LATTES -->
+        <mxCell id="s3a" value="Participação&#xa;em Eventos&#xa;(máx 10 pts)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="440" y="350" width="110" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s3b" value="Produção&#xa;Científica&#xa;(máx 10 pts)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="560" y="350" width="110" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s3c" value="Liderança&#xa;Estudantil&#xa;(máx 10 pts)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="440" y="430" width="110" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s3d" value="Programas&#xa;Acadêmicos&#xa;(máx 10 pts)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="560" y="430" width="110" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- SUBCRITÉRIOS CARTA -->
+        <mxCell id="s4a" value="Avaliação&#xa;individual&#xa;(até 5 pts)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="680" y="350" width="110" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s4b" value="Mérito do&#xa;candidato&#xa;(até 3 pts)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="800" y="350" width="110" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ALTERNATIVAS -->
+        <mxCell id="alt1" value="Candidato A" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="120" y="570" width="130" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="alt2" value="Candidato B" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="290" y="570" width="130" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="alt3" value="Candidato ..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="460" y="570" width="130" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="alt4" value="Candidato N" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="630" y="570" width="130" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- ARESTAS: Objetivo → Critérios -->
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="obj" target="c1" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="obj" target="c2" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="obj" target="c3" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="obj" target="c4" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- ARESTAS: Critérios → Subcritérios -->
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="c1" target="s1a" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="c1" target="s1b" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="c2" target="s2a" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="c2" target="s2b" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="c3" target="s3a" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="c3" target="s3b" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="c3" target="s3c" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e12" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="c3" target="s3d" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e13" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="c4" target="s4a" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e14" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="c4" target="s4b" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- ARESTAS: Subcritérios → Alternativas -->
+        <mxCell id="e15" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="s1a" target="alt1" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e16" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="s2a" target="alt2" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e17" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="s3a" target="alt3" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e18" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="s4a" target="alt4" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
