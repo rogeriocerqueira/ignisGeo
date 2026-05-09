@@ -1,0 +1,30 @@
+docker compose exec backend python manage.py shell -c "
+import csv
+from django.contrib.gis.geos import Point
+from queimadas.models import FocoQueimada
+from queimadas.tasks import parse_linha
+
+caminho = '/app/data/focos.csv'
+importados = 0
+erros = 0
+lote = []
+
+with open(caminho, encoding='utf-8-sig') as f:
+    reader = csv.DictReader(f)
+    for linha in reader:
+        dados = parse_linha(linha)
+        if dados:
+            lote.append(FocoQueimada(**dados))
+        else:
+            erros += 1
+        if len(lote) >= 500:
+            FocoQueimada.objects.bulk_create(lote, ignore_conflicts=True)
+            importados += len(lote)
+            lote = []
+    if lote:
+        FocoQueimada.objects.bulk_create(lote, ignore_conflicts=True)
+        importados += len(lote)
+
+print(f'Importados: {importados} | Erros: {erros}')
+print(f'Total no banco: {FocoQueimada.objects.count()}')
+"
