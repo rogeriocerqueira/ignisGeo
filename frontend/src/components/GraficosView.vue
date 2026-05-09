@@ -34,7 +34,21 @@
           <span class="card-titulo">Série Temporal — Focos por Mês</span>
           <span class="card-badge">Sazonalidade</span>
         </div>
-        <canvas ref="c2" class="canvas"></canvas>
+        <div class="canvas-wrap" style="position:relative;">
+          <canvas ref="c2" class="canvas"
+            @mousemove="g2MouseMove"
+            @mouseleave="g2MouseLeave"
+            style="cursor:crosshair;">
+          </canvas>
+          <div v-if="g2Tooltip.visible" class="g2-tooltip"
+            :style="{ left: g2Tooltip.x + 'px', top: g2Tooltip.y + 'px' }">
+            <div class="g2-tt-mes">{{ g2Tooltip.mes }}</div>
+            <div class="g2-tt-focos">
+              {{ g2Tooltip.focos.toLocaleString("pt-BR") }} focos
+            </div>
+            <div class="g2-tt-frp">FRP médio: {{ g2Tooltip.frp }} MW</div>
+          </div>
+        </div>
         <p class="card-nota">Pico em setembro/2025 · sazonalidade jul–out</p>
       </div>
     </div>
@@ -260,6 +274,12 @@ const dadosGraficos = reactive({
   top5_radar: [], scores_por_nivel: {}, scatter: {},
 });
 
+// Tooltip da série temporal (G2)
+const g2Tooltip = reactive({
+  visible: false, x: 0, y: 0,
+  mes: "", focos: 0, frp: "—",
+});
+
 // ── Computed ──
 const niv = computed(() => dadosGraficos.scores_por_nivel || {});
 const totalAreas = computed(() => store.rankingTotal || 0);
@@ -418,9 +438,71 @@ function desenharG1() {
 }
 
 // ══════════════════════════════════════════════════
+// G2 — Tooltip interativo
+// ══════════════════════════════════════════════════
+const MESES_BR_FULL = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+                       "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+
+function g2MouseLeave() {
+  g2Tooltip.visible = false;
+  // Redesenha sem o crosshair
+  desenharG2();
+}
+
+function g2MouseMove(evt) {
+  const serie = dadosGraficos.serie_temporal;
+  if (!serie.length || !c2.value) return;
+
+  const rect  = c2.value.getBoundingClientRect();
+  const mouseX = evt.clientX - rect.left;
+  const mouseY = evt.clientY - rect.top;
+
+  // Reproduz os mesmos parâmetros de layout do desenharG2
+  const W = c2.value.width;
+  const H = c2.value.height;
+  const PL = 68; const PR = 16; const PT = 24; const PB = 44;
+  const drawW = W - PL - PR;
+  const n     = serie.length;
+
+  // Encontra o ponto mais próximo no eixo X
+  const xOf = (i) => PL + (i / Math.max(n - 1, 1)) * drawW;
+  let idxMin = 0;
+  let distMin = Infinity;
+  serie.forEach((_, i) => {
+    const d = Math.abs(xOf(i) - mouseX);
+    if (d < distMin) { distMin = d; idxMin = i; }
+  });
+
+  // Só mostra tooltip se o cursor está dentro da área do gráfico
+  if (mouseX < PL || mouseX > W - PR || mouseY < PT || mouseY > H - PB) {
+    g2Tooltip.visible = false;
+    desenharG2();
+    return;
+  }
+
+  const ponto  = serie[idxMin];
+  const [ano, mes] = ponto.mes.split("-");
+  const nomeMes = MESES_BR_FULL[parseInt(mes, 10) - 1];
+
+  g2Tooltip.mes   = `${nomeMes} de ${ano}`;
+  g2Tooltip.focos = ponto.focos;
+  g2Tooltip.frp   = Number(ponto.frp_medio || 0).toFixed(1);
+
+  // Posição do tooltip: à direita do ponto se couber, senão à esquerda
+  const TW = 168; // largura estimada do tooltip
+  const px  = xOf(idxMin);
+  g2Tooltip.x = (px + TW + 12 < rect.width) ? px + 12 : px - TW - 12;
+  g2Tooltip.y = Math.max(8, mouseY - 40);
+  g2Tooltip.visible = true;
+
+  // Redesenha com o crosshair no ponto
+  desenharG2(idxMin);
+}
+
+// ══════════════════════════════════════════════════
 // G2 — Série temporal
 // ══════════════════════════════════════════════════
-function desenharG2() {
+function desenharG2(idxAtivo = -1) {
   const cx = initCanvas(c2, 240); if (!cx) return;
   const W = c2.value.width; const H = c2.value.height;
   // PL maior p/ rótulo Y rotacionado; PB maior p/ rótulo X + título
@@ -479,10 +561,53 @@ function desenharG2() {
   cx.fillStyle = P.verm; cx.font = "bold 9px system-ui"; cx.textAlign = "center";
   cx.fillText(`▲ ${maxV.toLocaleString("pt-BR")}`, xOf(idxP), yOf(maxV) - 8);
 
-  // Labels X (a cada 3 meses)
-  cx.font = "9px system-ui"; cx.fillStyle = "#6B7280"; cx.textAlign = "center";
+  // ── Labels X — formato brasileiro + ticks inteligentes ──────────
+  // Converte "YYYY-MM" para "Mmm/AA" (ex: "2025-09" → "Set/25")
+  const MESES_BR = ["Jan","Fev","Mar","Abr","Mai","Jun",
+                    "Jul","Ago","Set","Out","Nov","Dez"];
+  const fmtMes = (mesStr) => {
+    const [ano, mes] = mesStr.split("-");
+    return `${MESES_BR[parseInt(mes, 10) - 1]}/${ano.slice(2)}`;
+  };
+
+  // Densidade adaptativa: mostra label a cada N meses
+  // para que os textos nunca se sobreponham
+  // Largura estimada de cada label: ~38px; espaço disponível: drawW
+  const labelW  = 40;
+  const maxLabels = Math.max(1, Math.floor(drawW / labelW));
+  const step  = Math.ceil(n / maxLabels);
+
+  cx.font = "9px system-ui"; cx.fillStyle = "#4B5563"; cx.textAlign = "center";
+
   serie.forEach((s, i) => {
-    if (i % 3 === 0) cx.fillText(s.mes.slice(0, 7), xOf(i), H - PB + 14);
+    const x = xOf(i);
+    // Traço de tick em todos os meses
+    cx.strokeStyle = "#D1D5DB"; cx.lineWidth = 0.8;
+    cx.beginPath(); cx.moveTo(x, H - PB); cx.lineTo(x, H - PB + 4); cx.stroke();
+
+    // Label apenas nos meses selecionados pela densidade
+    if (i % step === 0 || i === n - 1) {
+      // Destaque para janeiro de cada ano (início de ano)
+      const isJan = s.mes.endsWith("-01");
+      if (isJan) {
+        cx.font = "bold 9px system-ui";
+        cx.fillStyle = "#1F2937";
+      } else {
+        cx.font = "9px system-ui";
+        cx.fillStyle = "#4B5563";
+      }
+      cx.fillText(fmtMes(s.mes), x, H - PB + 14);
+
+      // Linha vertical tracejada leve nos Janeiros (marca virada de ano)
+      if (isJan && i > 0) {
+        cx.save();
+        cx.strokeStyle = "#D1D5DB"; cx.lineWidth = 0.6;
+        cx.setLineDash([2, 4]);
+        cx.beginPath(); cx.moveTo(x, PT + 4); cx.lineTo(x, H - PB); cx.stroke();
+        cx.setLineDash([]);
+        cx.restore();
+      }
+    }
   });
 
   // Título eixo X
@@ -496,6 +621,36 @@ function desenharG2() {
   cx.font = "bold 10px system-ui"; cx.fillStyle = "#374151"; cx.textAlign = "center";
   cx.fillText("Nº de Focos", 0, 0);
   cx.restore();
+
+  // ── Crosshair e ponto destacado (tooltip) ──────────────────────
+  if (idxAtivo >= 0 && idxAtivo < n) {
+    const xA = xOf(idxAtivo);
+    const yA = yOf(vals[idxAtivo]);
+
+    // Linha vertical tracejada
+    cx.save();
+    cx.strokeStyle = "#374151"; cx.lineWidth = 1;
+    cx.setLineDash([4, 4]);
+    cx.beginPath(); cx.moveTo(xA, PT); cx.lineTo(xA, H - PB); cx.stroke();
+    cx.setLineDash([]);
+
+    // Linha horizontal tracejada
+    cx.strokeStyle = "#374151"; cx.lineWidth = 1;
+    cx.setLineDash([4, 4]);
+    cx.beginPath(); cx.moveTo(PL, yA); cx.lineTo(W - PR, yA); cx.stroke();
+    cx.setLineDash([]);
+    cx.restore();
+
+    // Círculo destacado no ponto
+    cx.beginPath();
+    cx.arc(xA, yA, 6, 0, Math.PI * 2);
+    cx.fillStyle = "#fff"; cx.fill();
+    cx.strokeStyle = P.lrj; cx.lineWidth = 2.5; cx.stroke();
+
+    cx.beginPath();
+    cx.arc(xA, yA, 3, 0, Math.PI * 2);
+    cx.fillStyle = P.lrj; cx.fill();
+  }
 }
 
 // ══════════════════════════════════════════════════
@@ -875,7 +1030,7 @@ function desenharG6() {
       cx.strokeStyle = "#6B7280"; cx.lineWidth = 0.9; cx.setLineDash([2, 4]);
       cx.beginPath(); cx.moveTo(x_, PT + 18); cx.lineTo(x_, H - PB); cx.stroke();
       cx.setLineDash([]);
-      cx.fillStyle = "#9CA3AF"; cx.font = "8px system-ui"; cx.textAlign = "center";
+      cx.fillStyle = "#374151"; cx.font = "bold 9px system-ui"; cx.textAlign = "center";
       cx.fillText(side === 0 ? "μ−σ" : "μ+σ", x_, PT + 17);
     });
   }
@@ -1244,6 +1399,25 @@ onMounted(() => { carregarDados(); carregarCorrelacao(); });
 .card-controles { display: flex; align-items: center; gap: 10px; }
 .card-nota    { font-size: 10px; color: #4B5563; margin-top: 8px; font-style: italic; }
 .canvas       { width: 100% !important; display: block; height: 220px; }
+
+/* Tooltip G2 */
+.g2-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(17,24,39,0.92);
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  z-index: 10;
+  backdrop-filter: blur(4px);
+}
+.g2-tt-mes   { font-size: 11px; color: #9CA3AF; margin-bottom: 2px; }
+.g2-tt-focos { font-size: 14px; font-weight: 700; color: #F97316; }
+.g2-tt-frp   { font-size: 11px; color: #D1D5DB; margin-top: 2px; }
 
 /* Toggle Gauss */
 .toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; }
