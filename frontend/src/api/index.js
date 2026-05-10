@@ -35,8 +35,16 @@ export const analiseApi = {
     return api.post("/importar-csv/", { caminho });
   },
 
-  getEstatisticas(params = {}) {       // ← vírgula depois de importarCSV
+  getEstatisticas(params = {}) {
     return api.get("/estatisticas/", { params });
+  },
+
+  /**
+   * Agrega AreaRisco por bioma — alimenta o GraficoTopsis3D.
+   * Filtros opcionais: estado, nivel_risco, data_inicio, data_fim
+   */
+  getGraficoBioma(params = {}) {
+    return api.get("/grafico-bioma/", { params });
   },
 };
 
