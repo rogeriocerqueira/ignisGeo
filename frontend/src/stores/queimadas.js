@@ -17,10 +17,13 @@ export const useQueimadasStore = defineStore("queimadas", () => {
   // Incrementado após cada TOPSIS para notificar PainelRanking
   const rankingAtualizado = ref(0);
 
+  // ── Dados agregados por bioma (GraficoTopsis3D) ──────────────────────────
+  const dadosBioma = ref([]);
+
   const _carregandoCount = ref(0);
   const carregando = computed(() => _carregandoCount.value > 0);
 
-  const erros = ref({ focos: null, areas: null, ranking: null, topsis: null });
+  const erros = ref({ focos: null, areas: null, ranking: null, topsis: null, bioma: null });
   const erro  = computed(() =>
     erros.value.topsis ?? erros.value.focos ??
     erros.value.areas  ?? erros.value.ranking ?? null
@@ -46,7 +49,6 @@ export const useQueimadasStore = defineStore("queimadas", () => {
 
   /**
    * Converte chaves camelCase dos filtros para snake_case da API.
-   * nivelRisco → nivel_risco  |  dataInicio → data_inicio  etc.
    */
   function filtrosAtivos() {
     const mapa = {
@@ -89,35 +91,26 @@ export const useQueimadasStore = defineStore("queimadas", () => {
     }
   }
 
-  /**
-   * Carrega o ranking paginado com os filtros ativos.
-   * @param {number} pagina - página solicitada (1-based)
-   */
   async function carregarRanking(pagina = 1) {
     _inc();
     erros.value.ranking = null;
     try {
       const params = {
-        ...filtrosAtivos(),           // estado, bioma, nivel_risco, data_inicio, data_fim
+        ...filtrosAtivos(),
         page:      pagina,
         page_size: RANKING_PAGE_SIZE,
       };
-
       const { data } = await areasApi.getRanking(params);
-
       if (data && data.results !== undefined) {
-        // Resposta paginada do DRF: { count, next, previous, results }
         rankingItems.value     = data.results;
         rankingTotal.value     = data.count ?? 0;
         rankingTotalPags.value = Math.ceil((data.count ?? 0) / RANKING_PAGE_SIZE);
       } else {
-        // Fallback: lista direta (sem paginação no backend)
         const lista = Array.isArray(data) ? data : [];
         rankingItems.value     = lista;
         rankingTotal.value     = lista.length;
         rankingTotalPags.value = 1;
       }
-
       rankingPagina.value = pagina;
     } catch {
       erros.value.ranking = "Erro ao carregar ranking.";
@@ -139,6 +132,33 @@ export const useQueimadasStore = defineStore("queimadas", () => {
     }
   }
 
+  /**
+   * Carrega dados agregados por bioma para o GraficoTopsis3D.
+   * Popula `dadosBioma` com a resposta de /api/grafico-bioma/.
+   * Não bloqueia o restante da inicialização.
+   */
+  async function carregarDadosBioma() {
+    _inc();
+    erros.value.bioma = null;
+    try {
+      // Omite filtro de bioma individual (o gráfico mostra todos os biomas)
+      const { estado, data_inicio, data_fim } = filtrosAtivos();
+      const params = {};
+      if (estado)      params.estado      = estado;
+      if (data_inicio) params.data_inicio = data_inicio;
+      if (data_fim)    params.data_fim    = data_fim;
+
+      const { data } = await analiseApi.getGraficoBioma(params);
+      dadosBioma.value = Array.isArray(data) ? data : [];
+    } catch (e) {
+      console.error("Erro ao carregar dados por bioma:", e);
+      erros.value.bioma = "Erro ao carregar dados por bioma.";
+      dadosBioma.value  = [];     // GraficoTopsis3D usará o fallback sintético
+    } finally {
+      _dec();
+    }
+  }
+
   async function executarTopsis(dataInicio = null, dataFim = null, estado = null, bioma = null) {
     _inc();
     erros.value.topsis = null;
@@ -151,16 +171,14 @@ export const useQueimadasStore = defineStore("queimadas", () => {
 
       const { data } = await analiseApi.calcularTopsis(payload);
 
-      // Recarrega tudo voltando para página 1
       await Promise.all([
         carregarAreasRisco(),
         carregarRanking(1),
         carregarEstatisticas(),
+        carregarDadosBioma(),   // ← recarrega bioma após novo TOPSIS
       ]);
 
-      // Notifica PainelRanking para resetar para página 1
       rankingAtualizado.value++;
-
       return data;
     } catch (e) {
       erros.value.topsis = "Erro ao calcular TOPSIS Fuzzy.";
@@ -170,15 +188,13 @@ export const useQueimadasStore = defineStore("queimadas", () => {
     }
   }
 
-  /**
-   * Aplica novos filtros e recarrega todos os dados do zero (página 1).
-   */
   function aplicarFiltros(novosFiltros) {
     filtros.value = { ...filtros.value, ...novosFiltros };
     carregarFocosGeoJSON();
     carregarAreasRisco();
-    carregarRanking(1);       // sempre volta para página 1
+    carregarRanking(1);
     carregarEstatisticas();
+    carregarDadosBioma();   // ← atualiza gráfico 3D ao mudar filtros
   }
 
   function limparFiltros() {
@@ -187,6 +203,7 @@ export const useQueimadasStore = defineStore("queimadas", () => {
     carregarAreasRisco();
     carregarRanking(1);
     carregarEstatisticas();
+    carregarDadosBioma();
   }
 
   async function inicializar() {
@@ -195,12 +212,13 @@ export const useQueimadasStore = defineStore("queimadas", () => {
       carregarFocosGeoJSON(),
       carregarAreasRisco(),
       carregarRanking(1),
+      carregarDadosBioma(),   // ← carrega na inicialização junto com o resto
     ]);
   }
 
   return {
     // Estado reativo
-    focosGeoJSON, areasGeoJSON, estatisticas,
+    focosGeoJSON, areasGeoJSON, estatisticas, dadosBioma,
     rankingItems, rankingTotal, rankingPagina, rankingTotalPags,
     rankingAtualizado, carregando, erro, erros, filtros,
 
@@ -209,7 +227,7 @@ export const useQueimadasStore = defineStore("queimadas", () => {
 
     // Ações
     carregarFocosGeoJSON, carregarAreasRisco,
-    carregarRanking, carregarEstatisticas,
+    carregarRanking, carregarEstatisticas, carregarDadosBioma,
     executarTopsis, aplicarFiltros, limparFiltros, inicializar,
     filtrosAtivos,
   };
