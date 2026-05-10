@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .grafico_bioma_view import grafico_bioma_view
 
 urlpatterns = [
     # Focos de queimada
@@ -23,4 +24,7 @@ urlpatterns = [
 
     # Análise estatística
     path("correlacao/",     views.correlacao_view,      name="correlacao"),
+
+    # Gráfico 3D Fuzzy TOPSIS — dados agregados por bioma
+    path("grafico-bioma/",  grafico_bioma_view,         name="grafico-bioma"),
 ]
