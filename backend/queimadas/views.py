@@ -7,6 +7,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from django.views.decorators.csrf import csrf_exempt
+from django.db.models import Avg, Count, Min, Max, Sum   # Sum é novo
+
 
 from .models import FocoQueimada, AreaRisco
 from .serializers import (
