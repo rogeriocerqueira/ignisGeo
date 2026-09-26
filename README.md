@@ -1,4 +1,4 @@
-# 🔥 IgnisGeo — Plataforma Geoespacial de Risco de Queimadas
+# 🔥 IgnisGeo : Plataforma Geoespacial de Risco de Queimadas
 
 ---
 
