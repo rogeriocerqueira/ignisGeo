@@ -1,0 +1,556 @@
+From cf1f3734c1089f2c64e403c87c5397845ec14250 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 26 Sep 2026 13:54:18 -0300
+Subject: [PATCH] Preparar deploy: backend no Render e frontend no Vercel
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- settings via variáveis de ambiente (hosts, CORS, CSRF, WhiteNoise)
+- start.sh com migrate/collectstatic/gunicorn e render.yaml (Blueprint)
+- importação de CSV por upload e comando manage.py importar_csv, sem worker Celery
+- frontend usa VITE_API_URL em produção; vercel.json
+- DEPLOY.md com o passo a passo
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01TVmjRiLmSNA2NWvvRSyDTA
+---
+ DEPLOY.md                                     | 91 +++++++++++++++++++
+ backend/.dockerignore                         |  5 +
+ backend/Dockerfile                            |  4 +
+ backend/config/settings.py                    | 37 +++++++-
+ backend/queimadas/management/__init__.py      |  0
+ .../queimadas/management/commands/__init__.py |  0
+ .../management/commands/importar_csv.py       | 24 +++++
+ backend/queimadas/tasks.py                    | 50 +++++-----
+ backend/queimadas/views.py                    | 36 +++++++-
+ backend/requirements.txt                      |  1 +
+ backend/start.sh                              | 14 +++
+ frontend/.env.example                         |  2 +
+ frontend/src/api/index.js                     | 23 ++++-
+ frontend/vercel.json                          |  7 ++
+ render.yaml                                   | 42 +++++++++
+ 15 files changed, 310 insertions(+), 26 deletions(-)
+ create mode 100644 DEPLOY.md
+ create mode 100644 backend/.dockerignore
+ create mode 100644 backend/queimadas/management/__init__.py
+ create mode 100644 backend/queimadas/management/commands/__init__.py
+ create mode 100644 backend/queimadas/management/commands/importar_csv.py
+ create mode 100755 backend/start.sh
+ create mode 100644 frontend/.env.example
+ create mode 100644 frontend/vercel.json
+ create mode 100644 render.yaml
+
+diff --git a/DEPLOY.md b/DEPLOY.md
+new file mode 100644
+index 0000000..aa087dc
+--- /dev/null
++++ b/DEPLOY.md
+@@ -0,0 +1,91 @@
++# Deploy do IgnisGeo
++
++| Parte | Onde | Custo |
++|---|---|---|
++| API Django + GeoDjango (Docker) | Render — Web Service | grátis (dorme após 15 min sem acesso) |
++| PostgreSQL + PostGIS | Render — Postgres | grátis por 30 dias |
++| Frontend Vue (Vite) | Vercel | grátis |
++
++No plano grátis não há worker do Celery nem Redis: com `CELERY_TASK_ALWAYS_EAGER=True`
++as tarefas rodam dentro do próprio processo web. O `docker-compose` local continua igual.
++
++---
++
++## 1. Backend no Render
++
++1. Faça o commit destes arquivos e dê push para o GitHub.
++2. No [Render](https://dashboard.render.com): **New + → Blueprint** → conecte o GitHub → escolha `ignisGeo`.
++3. O Render lê o `render.yaml` e cria `ignisgeo-db` (Postgres) e `ignisgeo-api` (Docker).
++   Ele vai pedir o valor de `CORS_ALLOWED_ORIGINS`: deixe em branco por enquanto.
++4. Aguarde o build (o primeiro leva ~5–10 min por causa do GDAL).
++   O `start.sh` roda `migrate` (que ativa a extensão PostGIS), `collectstatic` e sobe o Gunicorn.
++5. Teste: `https://ignisgeo-api.onrender.com/api/estatisticas/` deve responder um JSON.
++
++> A URL real aparece no topo da página do serviço. Se o nome `ignisgeo-api` já estiver em uso, o Render acrescenta um sufixo.
++
++## 2. Frontend no Vercel
++
++1. No [Vercel](https://vercel.com/new): **Add New → Project** → importe `ignisGeo`.
++2. **Root Directory:** `frontend` (o preset Vite é detectado sozinho).
++3. **Environment Variables:** `VITE_API_URL` = URL do backend, sem barra no final
++   (ex.: `https://ignisgeo-api.onrender.com`).
++4. **Deploy.**
++
++## 3. Liberar o CORS
++
++No Render → `ignisgeo-api` → **Environment**:
++
++- `CORS_ALLOWED_ORIGINS` = URL do Vercel (ex.: `https://ignisgeo.vercel.app`). Para mais de uma, separe por vírgulas.
++- `CORS_ALLOWED_ORIGIN_REGEXES` já libera os previews `https://ignisgeo*.vercel.app`. Ajuste se o projeto no Vercel tiver outro nome.
++
++Salve (o Render reinicia sozinho) e abra o site no Vercel.
++
++## 4. Carregar os dados do INPE
++
++O servidor não tem a pasta `data/`, então há duas formas:
++
++**Enviando o CSV pela API** (arquivos de até algumas dezenas de MB):
++
++```bash
++curl -X POST https://ignisgeo-api.onrender.com/api/importar-csv/ \
++  -F "arquivo=@data/focos_br_ref_2024.csv"
++
++curl -X POST https://ignisgeo-api.onrender.com/api/calcular-topsis/ \
++  -H "Content-Type: application/json" \
++  -d '{"data_inicio": "2024-01-01", "data_fim": "2024-01-31"}'
++```
++
++**Da sua máquina direto no banco do Render** (melhor para arquivos grandes):
++
++Copie a **External Database URL** em Render → `ignisgeo-db` → **Connect**, e rode:
++
++```bash
++docker compose run --rm -e DATABASE_URL="<External Database URL>" \
++  backend python manage.py importar_csv /app/data/focos_br_ref_2024.csv
++```
++
++Depois chame o `calcular-topsis` como acima.
++
++> A importação não evita duplicatas: importar o mesmo CSV duas vezes duplica os focos.
++
++## Avisos do plano grátis
++
++- **O banco do Render expira em 30 dias.** Antes disso, passe para um plano pago (Basic, a partir de ~US$ 6/mês)
++  ou migre para um Postgres grátis com PostGIS (ex.: Neon ou Supabase) e troque só a variável `DATABASE_URL`.
++- **O backend dorme** após 15 min sem acesso; a primeira requisição depois disso leva ~1 min.
++  O frontend já espera até 60 s.
++- 512 MB de RAM: o TOPSIS com muitos municípios ou CSVs enormes pela API podem estourar. Nesse caso, use o comando local.
++
++## Variáveis de ambiente do backend
++
++| Variável | Uso |
++|---|---|
++| `DATABASE_URL` | Postgres/PostGIS (o Render preenche) |
++| `SECRET_KEY` | gerada pelo Render |
++| `DEBUG` | `False` em produção |
++| `ALLOWED_HOSTS` | `.onrender.com` (+ domínio próprio, se houver) |
++| `CORS_ALLOWED_ORIGINS` | URLs do frontend, separadas por vírgula |
++| `CORS_ALLOWED_ORIGIN_REGEXES` | regex para previews do Vercel |
++| `CSRF_TRUSTED_ORIGINS` | opcional, para usar o `/admin` a partir de outro domínio |
++| `CELERY_TASK_ALWAYS_EAGER` | `True` sem worker/Redis |
++| `REDIS_URL` | só se você adicionar Redis + worker (planos pagos) |
+diff --git a/backend/.dockerignore b/backend/.dockerignore
+new file mode 100644
+index 0000000..51df12c
+--- /dev/null
++++ b/backend/.dockerignore
+@@ -0,0 +1,5 @@
++__pycache__/
++*.pyc
++staticfiles/
++.env
++data/
+diff --git a/backend/Dockerfile b/backend/Dockerfile
+index 3b10ac7..3bf200c 100644
+--- a/backend/Dockerfile
++++ b/backend/Dockerfile
+@@ -19,3 +19,7 @@ RUN pip install --no-cache-dir -r requirements.txt
+ COPY . .
+ 
+ EXPOSE 8000
++
++# Produção (Render): migra, coleta estáticos e sobe o Gunicorn na porta $PORT.
++# No docker-compose local o "command: runserver" sobrescreve este CMD.
++CMD ["sh", "start.sh"]
+diff --git a/backend/config/settings.py b/backend/config/settings.py
+index 0b01ba2..7d5fae1 100644
+--- a/backend/config/settings.py
++++ b/backend/config/settings.py
+@@ -6,7 +6,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
+ 
+ SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-dev-key-troque-em-producao")
+ DEBUG = os.environ.get("DEBUG", "True") == "True"
+-ALLOWED_HOSTS = ["*"]
++
++
++def _lista_env(nome, padrao=""):
++    """Lê uma variável de ambiente separada por vírgulas como lista."""
++    return [v.strip() for v in os.environ.get(nome, padrao).split(",") if v.strip()]
++
++
++ALLOWED_HOSTS = _lista_env("ALLOWED_HOSTS", "*")
++# O Render define esta variável automaticamente com o domínio do serviço
++RENDER_EXTERNAL_HOSTNAME = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
++if RENDER_EXTERNAL_HOSTNAME and "*" not in ALLOWED_HOSTS:
++    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+ 
+ INSTALLED_APPS = [
+     "django.contrib.admin",
+@@ -28,6 +39,7 @@ INSTALLED_APPS = [
+ MIDDLEWARE = [
+     "corsheaders.middleware.CorsMiddleware",
+     "django.middleware.security.SecurityMiddleware",
++    "whitenoise.middleware.WhiteNoiseMiddleware",
+     "django.contrib.sessions.middleware.SessionMiddleware",
+     "django.middleware.common.CommonMiddleware",
+     "django.middleware.csrf.CsrfViewMiddleware",
+@@ -44,6 +56,7 @@ DATABASES = {
+     "default": dj_database_url.config(
+         default="postgis://queimadas_user:queimadas_pass@localhost:5432/queimadas",
+         engine="django.contrib.gis.db.backends.postgis",
++        conn_max_age=600,
+     )
+ }
+ 
+@@ -52,13 +65,30 @@ CELERY_BROKER_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+ CELERY_RESULT_BACKEND = CELERY_BROKER_URL
+ CELERY_ACCEPT_CONTENT = ["json"]
+ CELERY_TASK_SERIALIZER = "json"
++# Em produção sem worker/Redis (ex.: plano grátis do Render), as tasks rodam
++# de forma síncrona dentro do próprio processo web.
++CELERY_TASK_ALWAYS_EAGER = os.environ.get("CELERY_TASK_ALWAYS_EAGER", "False") == "True"
++CELERY_TASK_EAGER_PROPAGATES = True
+ 
+ # CORS — permite o frontend Vue acessar a API
+ CORS_ALLOW_ALL_ORIGINS = DEBUG
+ CORS_ALLOWED_ORIGINS = [
+     "http://localhost:5173",
+     "http://127.0.0.1:5173",
++    # Domínios do frontend em produção, ex.: https://ignisgeo.vercel.app
++    *_lista_env("CORS_ALLOWED_ORIGINS"),
+ ]
++# Permite também os deploys de preview do Vercel (ex.: ignisgeo-git-xyz.vercel.app)
++CORS_ALLOWED_ORIGIN_REGEXES = _lista_env("CORS_ALLOWED_ORIGIN_REGEXES")
++CSRF_TRUSTED_ORIGINS = _lista_env("CSRF_TRUSTED_ORIGINS")
++if RENDER_EXTERNAL_HOSTNAME:
++    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
++
++# Atrás do proxy HTTPS do Render
++SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
++
++# Upload de CSV do INPE pela API: acima de 5 MB o arquivo vai para disco temporário
++FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+ 
+ REST_FRAMEWORK = {
+     "DEFAULT_RENDERER_CLASSES": [
+@@ -76,6 +106,11 @@ USE_I18N = True
+ USE_TZ = True
+ 
+ STATIC_URL = "/static/"
++STATIC_ROOT = BASE_DIR / "staticfiles"
++STORAGES = {
++    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
++    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
++}
+ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+ 
+ TEMPLATES = [
+diff --git a/backend/queimadas/management/__init__.py b/backend/queimadas/management/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/backend/queimadas/management/commands/__init__.py b/backend/queimadas/management/commands/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/backend/queimadas/management/commands/importar_csv.py b/backend/queimadas/management/commands/importar_csv.py
+new file mode 100644
+index 0000000..1782648
+--- /dev/null
++++ b/backend/queimadas/management/commands/importar_csv.py
+@@ -0,0 +1,24 @@
++from django.core.management.base import BaseCommand, CommandError
++
++from queimadas.tasks import processar_csv
++
++
++class Command(BaseCommand):
++    help = (
++        "Importa um CSV do INPE BDQueimadas direto no banco configurado em "
++        "DATABASE_URL (útil para carregar o banco de produção a partir da sua máquina)."
++    )
++
++    def add_arguments(self, parser):
++        parser.add_argument("caminho", help="Caminho do arquivo CSV do INPE")
++
++    def handle(self, *args, **options):
++        caminho = options["caminho"]
++        try:
++            resultado = processar_csv(caminho)
++        except FileNotFoundError:
++            raise CommandError(f"Arquivo não encontrado: {caminho}")
++        self.stdout.write(self.style.SUCCESS(
++            f"Importação concluída: {resultado['importados']} focos, "
++            f"{resultado['erros']} linhas ignoradas."
++        ))
+diff --git a/backend/queimadas/tasks.py b/backend/queimadas/tasks.py
+index 92958af..56c3207 100644
+--- a/backend/queimadas/tasks.py
++++ b/backend/queimadas/tasks.py
+@@ -161,44 +161,50 @@ def parse_linha(linha: dict) -> dict | None:
+         return None
+ 
+ 
+-@shared_task(bind=True, max_retries=3)
+-def importar_csv_inpe(self, caminho_csv: str):
++def processar_csv(caminho_csv: str) -> dict:
+     """
+     Importa CSV do INPE BDQueimadas para o banco PostGIS.
+     Processamento em lotes de 500 registros via bulk_create.
++    Usado pela task Celery, pela API de upload e pelo comando
++    `python manage.py importar_csv`.
+     """
+     importados = 0
+     erros = 0
+ 
+-    try:
+-        with open(caminho_csv, encoding="utf-8-sig") as f:
+-            reader = csv.DictReader(f)
+-            lote = []
+-
+-            for linha in reader:
+-                dados = parse_linha(linha)
+-                if dados is None:
+-                    erros += 1
+-                    continue
++    with open(caminho_csv, encoding="utf-8-sig") as f:
++        reader = csv.DictReader(f)
++        lote = []
+ 
+-                lote.append(FocoQueimada(**dados))
++        for linha in reader:
++            dados = parse_linha(linha)
++            if dados is None:
++                erros += 1
++                continue
+ 
+-                if len(lote) >= 500:
+-                    FocoQueimada.objects.bulk_create(lote, ignore_conflicts=True)
+-                    importados += len(lote)
+-                    logger.info(f"Importados {importados} focos...")
+-                    lote = []
++            lote.append(FocoQueimada(**dados))
+ 
+-            if lote:
++            if len(lote) >= 500:
+                 FocoQueimada.objects.bulk_create(lote, ignore_conflicts=True)
+                 importados += len(lote)
++                logger.info(f"Importados {importados} focos...")
++                lote = []
++
++        if lote:
++            FocoQueimada.objects.bulk_create(lote, ignore_conflicts=True)
++            importados += len(lote)
++
++    logger.info(f"Importação concluída: {importados} focos, {erros} erros.")
++    return {"importados": importados, "erros": erros}
++
+ 
++@shared_task(bind=True, max_retries=3)
++def importar_csv_inpe(self, caminho_csv: str):
++    """Task Celery que envolve processar_csv com novas tentativas."""
++    try:
++        return processar_csv(caminho_csv)
+     except FileNotFoundError:
+         logger.error(f"Arquivo não encontrado: {caminho_csv}")
+         raise self.retry(countdown=60)
+     except Exception as exc:
+         logger.error(f"Erro ao importar CSV: {exc}")
+         raise self.retry(exc=exc, countdown=120)
+-
+-    logger.info(f"Importação concluída: {importados} focos, {erros} erros.")
+-    return {"importados": importados, "erros": erros}
+\ No newline at end of file
+diff --git a/backend/queimadas/views.py b/backend/queimadas/views.py
+index 1974115..65ba1f9 100644
+--- a/backend/queimadas/views.py
++++ b/backend/queimadas/views.py
+@@ -15,7 +15,10 @@ from .serializers import (
+     AreaRiscoRankingSerializer,
+ )
+ from .topsis_fuzzy import calcular_topsis_fuzzy
+-from .tasks import importar_csv_inpe
++import os
++import tempfile
++
++from .tasks import importar_csv_inpe, processar_csv
+ 
+ 
+ # ── Paginação para o ranking ──────────────────────────────────
+@@ -239,6 +242,37 @@ def calcular_topsis_view(request):
+ @csrf_exempt
+ @api_view(["POST"])
+ def importar_csv_view(request):
++    """
++    POST /api/importar-csv/
++
++    Duas formas de uso:
++      1. multipart/form-data com o campo `arquivo` (CSV do INPE) — o arquivo
++         é importado na hora. É a forma usada em produção (Render), onde o
++         servidor não tem a pasta data/.
++      2. JSON {"caminho": "/app/data/arquivo.csv"} — arquivo já presente no
++         servidor, importado via Celery (uso local com docker-compose).
++    """
++    arquivo = request.FILES.get("arquivo")
++    if arquivo:
++        if not arquivo.name.lower().endswith(".csv"):
++            return Response(
++                {"erro": "Envie um arquivo .csv do INPE."},
++                status=status.HTTP_400_BAD_REQUEST,
++            )
++        with tempfile.NamedTemporaryFile(suffix=".csv", delete=False) as tmp:
++            for chunk in arquivo.chunks():
++                tmp.write(chunk)
++            caminho_tmp = tmp.name
++        try:
++            resultado = processar_csv(caminho_tmp)
++        finally:
++            os.remove(caminho_tmp)
++        return Response({
++            "mensagem": "Importação concluída.",
++            "arquivo":  arquivo.name,
++            **resultado,
++        })
++
+     caminho = request.data.get("caminho", "/app/data/focos_mensal.csv")
+     task = importar_csv_inpe.delay(caminho)
+     return Response({
+diff --git a/backend/requirements.txt b/backend/requirements.txt
+index d5eac08..4e08b87 100644
+--- a/backend/requirements.txt
++++ b/backend/requirements.txt
+@@ -15,3 +15,4 @@ fiona==1.9.6
+ pyproj==3.6.1
+ python-dotenv==1.0.1
+ gunicorn==22.0.0
++whitenoise==6.7.0
+diff --git a/backend/start.sh b/backend/start.sh
+new file mode 100755
+index 0000000..8e34270
+--- /dev/null
++++ b/backend/start.sh
+@@ -0,0 +1,14 @@
++#!/usr/bin/env sh
++# Comando de inicialização em produção (Render).
++# O plano grátis do Render não tem "pre-deploy command", então as migrações
++# rodam aqui, antes de subir o Gunicorn.
++set -e
++
++python manage.py migrate --noinput
++python manage.py collectstatic --noinput
++
++exec gunicorn config.wsgi:application \
++    --bind "0.0.0.0:${PORT:-8000}" \
++    --workers "${WEB_CONCURRENCY:-2}" \
++    --timeout "${GUNICORN_TIMEOUT:-180}" \
++    --access-logfile -
+diff --git a/frontend/.env.example b/frontend/.env.example
+new file mode 100644
+index 0000000..c8d4a35
+--- /dev/null
++++ b/frontend/.env.example
+@@ -0,0 +1,2 @@
++# URL do backend Django em produção (sem barra no final)
++VITE_API_URL=https://ignisgeo-api.onrender.com
+diff --git a/frontend/src/api/index.js b/frontend/src/api/index.js
+index 31ebcde..51c55ae 100644
+--- a/frontend/src/api/index.js
++++ b/frontend/src/api/index.js
+@@ -1,8 +1,17 @@
+ import axios from "axios";
+ 
++// Em produção (Vercel) defina VITE_API_URL com a URL do backend no Render,
++// ex.: https://ignisgeo-api.onrender.com. Em desenvolvimento é ignorada e o
++// proxy do Vite encaminha /api para o Django (no docker-compose VITE_API_URL
++// aponta para http://backend:8000, que só existe dentro da rede do Docker).
++const API_URL = import.meta.env.PROD
++  ? (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "")
++  : "";
++
+ const api = axios.create({
+-  baseURL: "/api",
+-  timeout: 30000,
++  baseURL: `${API_URL}/api`,
++  // 60s: no plano grátis o Render "dorme" e a primeira requisição demora
++  timeout: 60000,
+   headers: { "Content-Type": "application/json" },
+ });
+ 
+@@ -35,6 +44,16 @@ export const analiseApi = {
+     return api.post("/importar-csv/", { caminho });
+   },
+ 
++  // Envia um CSV do INPE a partir do navegador (funciona em produção)
++  enviarCSV(arquivo) {
++    const form = new FormData();
++    form.append("arquivo", arquivo);
++    return api.post("/importar-csv/", form, {
++      headers: { "Content-Type": "multipart/form-data" },
++      timeout: 0,
++    });
++  },
++
+   getEstatisticas(params = {}) {       // ← vírgula depois de importarCSV
+     return api.get("/estatisticas/", { params });
+   },
+diff --git a/frontend/vercel.json b/frontend/vercel.json
+new file mode 100644
+index 0000000..0ff9c99
+--- /dev/null
++++ b/frontend/vercel.json
+@@ -0,0 +1,7 @@
++{
++  "$schema": "https://openapi.vercel.sh/vercel.json",
++  "framework": "vite",
++  "buildCommand": "npm run build",
++  "outputDirectory": "dist",
++  "rewrites": [{ "source": "/((?!assets/).*)", "destination": "/index.html" }]
++}
+diff --git a/render.yaml b/render.yaml
+new file mode 100644
+index 0000000..f9ee814
+--- /dev/null
++++ b/render.yaml
+@@ -0,0 +1,42 @@
++# Blueprint do Render — cria a API Django (Docker) e o banco PostgreSQL.
++# No Render: New + → Blueprint → selecione este repositório.
++databases:
++  - name: ignisgeo-db
++    plan: free            # grátis por 30 dias; depois é preciso migrar para um plano pago
++    region: virginia      # região mais próxima do Brasil disponível no Render
++    databaseName: queimadas
++    user: queimadas_user
++    postgresMajorVersion: "16"
++
++services:
++  - type: web
++    name: ignisgeo-api
++    runtime: docker
++    plan: free
++    region: virginia
++    rootDir: backend
++    dockerfilePath: ./Dockerfile
++    dockerContext: .
++    healthCheckPath: /api/estatisticas/
++    envVars:
++      - key: DATABASE_URL
++        fromDatabase:
++          name: ignisgeo-db
++          property: connectionString
++      - key: SECRET_KEY
++        generateValue: true
++      - key: DEBUG
++        value: "False"
++      - key: ALLOWED_HOSTS
++        value: ".onrender.com"
++      # Sem worker/Redis no plano grátis: tasks do Celery rodam no próprio processo web
++      - key: CELERY_TASK_ALWAYS_EAGER
++        value: "True"
++      # Preencha no painel depois do deploy do front, ex.: https://ignisgeo.vercel.app
++      - key: CORS_ALLOWED_ORIGINS
++        sync: false
++      # Aceita os previews do Vercel; ajuste o prefixo para o nome do seu projeto
++      - key: CORS_ALLOWED_ORIGIN_REGEXES
++        value: '^https://ignisgeo.*\.vercel\.app$'
++      - key: WEB_CONCURRENCY
++        value: "2"
+-- 
+2.43.0
+
