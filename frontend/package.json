@@ -8,15 +8,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "vue": "^3.4.0",
-    "vue-router": "^4.3.0",
-    "pinia": "^2.1.7",
-    "axios": "^1.7.2",
-    "leaflet": "^1.9.4",
     "@vue-leaflet/vue-leaflet": "^0.10.1",
-    "leaflet.heat": "^0.2.0",
+    "axios": "^1.7.2",
     "chart.js": "^4.4.3",
-    "vue-chartjs": "^5.3.1"
+    "leaflet": "^1.9.4",
+    "leaflet.heat": "^0.2.0",
+    "pinia": "^2.1.7",
+    "plotly.js-dist-min": "^3.5.1",
+    "vue": "^3.4.0",
+    "vue-chartjs": "^5.3.1",
+    "vue-router": "^4.3.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.5",

@@ -76,6 +76,11 @@
       {{ store.carregando ? "Calculando..." : "Executar TOPSIS Fuzzy" }}
     </button>
 
+    <p class="painel-nota">
+        ⚠️ Executar TOPSIS recalcula e substitui o ranking atual.
+        Para o ranking global, limpe os filtros antes de executar.
+    </p>
+
     <div v-if="resultadoTopsis" class="resultado-topsis">
       <p class="resultado-titulo">✓ Cálculo concluído</p>
       <p>{{ resultadoTopsis.areas_atualizadas }} áreas analisadas</p>
@@ -219,6 +224,18 @@ async function executarTopsis() {
   flex-direction: column;
   gap: 4px;
   margin-bottom: 12px;
+}
+
+.painel-nota {
+  font-size: 11px;
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-top: -6px;
+  margin-bottom: 8px;
+  line-height: 1.5;
 }
 .campo label {
   font-size: 12px;

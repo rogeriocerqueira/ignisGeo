@@ -1,240 +1,243 @@
 """
-TOPSIS Fuzzy — Technique for Order of Preference by Similarity to Ideal Solution
-com números fuzzy triangulares (a, b, c).
+topsis_fuzzy.py — TOPSIS Fuzzy (Chen, 2000)
+IgnisGeo · TCC UEFS 2026
 
-Referência: Chen, C.T. (2000). Extensions of the TOPSIS for group decision-making
-under fuzzy environment. Fuzzy Sets and Systems, 114(1), 1-9.
-
-Critérios utilizados (todos do CSV padrão INPE BDQueimadas):
-  C1 — total_focos           : contagem de focos no período         (benefício)
-  C2 — frp_media             : Fire Radiative Power médio em MW     (benefício)
-  C3 — risco_historico_medio : índice de risco histórico INPE [0,1] (benefício)
-  C4 — dias_sem_chuva_medio  : média de dias consecutivos sem chuva (benefício)
-  C5 — precipitacao_media    : precipitação acumulada média em mm   (custo)
+Referência:
+  Chen, C.T. (2000). Extensions of the TOPSIS for group decision-making
+  under fuzzy environment. Fuzzy Sets and Systems, 114(1), 1–9.
 """
 
-import numpy as np
-from dataclasses import dataclass
-from typing import List
+import math
 
 
-@dataclass
+# ══════════════════════════════════════════════════════════════════════
+# NumeroFuzzy — Número Fuzzy Triangular (NFT)
+# ══════════════════════════════════════════════════════════════════════
+
 class NumeroFuzzy:
-    """Número fuzzy triangular (a, b, c) onde a ≤ b ≤ c."""
-    a: float
-    b: float
-    c: float
+    """
+    Número fuzzy triangular (a, b, c) conforme Chen (2000).
+      a = limite inferior  (l)
+      b = valor modal      (m)
+      c = limite superior  (u)
+    """
 
-    def distancia(self, outro: "NumeroFuzzy") -> float:
-        """Distância entre dois números fuzzy triangulares (vertex method)."""
-        return np.sqrt(
-            (1 / 3) * (
-                (self.a - outro.a) ** 2 +
-                (self.b - outro.b) ** 2 +
-                (self.c - outro.c) ** 2
-            )
+    def __init__(self, a: float, b: float, c: float):
+        self.a = a
+        self.b = b
+        self.c = c
+
+    def distancia(self, other: "NumeroFuzzy") -> float:
+        """
+        Distância de vértice entre dois NFT (Chen, 2000, Eq. 4):
+          d = sqrt(1/3 × [(a1-a2)² + (b1-b2)² + (c1-c2)²])
+        """
+        return math.sqrt(
+            ((self.a - other.a) ** 2 +
+             (self.b - other.b) ** 2 +
+             (self.c - other.c) ** 2) / 3
         )
 
+    def __repr__(self) -> str:
+        return f"NFT({self.a:.3f}, {self.b:.3f}, {self.c:.3f})"
 
-# Escala linguística fuzzy para os pesos dos critérios (Chen, 2000)
+
+# ══════════════════════════════════════════════════════════════════════
+# normalizar_fuzzy
+# ══════════════════════════════════════════════════════════════════════
+
+def normalizar_fuzzy(valor: float, min_v: float, max_v: float) -> NumeroFuzzy:
+    """
+    Normaliza um valor escalar para [0,1] e adiciona spread fixo de ±0.10,
+    retornando um NFT (a, b, c) com a ∈ [0,1] e c ∈ [0,1].
+
+    Quando min_v == max_v (degenerate), retorna NFT(0.5, 0.5, 0.5).
+    """
+    if max_v <= min_v:
+        return NumeroFuzzy(0.5, 0.5, 0.5)
+    b = (valor - min_v) / (max_v - min_v)
+    spread = 0.1
+    return NumeroFuzzy(
+        max(0.0, b - spread),
+        b,
+        min(1.0, b + spread),
+    )
+
+
+# ══════════════════════════════════════════════════════════════════════
+# classificar_nivel — limiares fixos (função de compatibilidade)
+# ══════════════════════════════════════════════════════════════════════
+
+def classificar_nivel(cc: float) -> str:
+    """
+    Classifica um CCᵢ por limiares fixos de score.
+    Usada para consultas pontuais e compatibilidade com código legado.
+    O pipeline calcular_topsis_fuzzy usa classificação por percentil
+    de ranking (mais robusta para conjuntos de tamanhos variados).
+    """
+    if cc >= 0.45: return "CRITICO"
+    if cc >= 0.35: return "ALTO"
+    if cc >= 0.25: return "MEDIO"
+    return "BAIXO"
+
+
+# ══════════════════════════════════════════════════════════════════════
+# Pesos linguísticos (Chen, 2000, Tabela 1, p. 3)
+# NFT = (l, m, u) — domínio normalizado [0, 1]
+# ══════════════════════════════════════════════════════════════════════
+
 PESOS_LINGUISTICOS = {
-    "muito_baixo": NumeroFuzzy(0.0,  0.0,  0.25),
-    "baixo":       NumeroFuzzy(0.0,  0.25, 0.50),
-    "medio":       NumeroFuzzy(0.25, 0.50, 0.75),
-    "alto":        NumeroFuzzy(0.50, 0.75, 1.00),
-    "muito_alto":  NumeroFuzzy(0.75, 1.00, 1.00),
+    "muito_baixo": (0.00, 0.00, 0.25),
+    "baixo":       (0.00, 0.25, 0.50),
+    "medio":       (0.25, 0.50, 0.75),
+    "alto":        (0.50, 0.75, 1.00),
+    "muito_alto":  (0.75, 1.00, 1.00),
 }
 
-# Critérios de custo — valor alto significa MENOR risco (invertidos na normalização)
+# Pesos padrão do IgnisGeo
+PESOS_PADRAO = {
+    "total_focos":           PESOS_LINGUISTICOS["muito_alto"],  # C1 — Benefício
+    "frp_media":             PESOS_LINGUISTICOS["muito_alto"],  # C2 — Benefício
+    "risco_historico_medio": PESOS_LINGUISTICOS["alto"],        # C3 — Benefício
+    "dias_sem_chuva_medio":  PESOS_LINGUISTICOS["alto"],        # C4 — Benefício
+    "precipitacao_media":    PESOS_LINGUISTICOS["medio"],       # C5 — Custo
+}
+
+# Critérios custo: maior valor → menor risco (inversão na normalização)
 CRITERIOS_CUSTO = {"precipitacao_media"}
+CRITERIOS = list(PESOS_PADRAO.keys())
 
 
-def normalizar_fuzzy(valor: float, minimo: float, maximo: float) -> NumeroFuzzy:
+# ══════════════════════════════════════════════════════════════════════
+# calcular_topsis_fuzzy — Pipeline principal
+# ══════════════════════════════════════════════════════════════════════
+
+def calcular_topsis_fuzzy(alternativas: list, pesos: dict = None) -> list:
     """
-    Converte um valor numérico real em número fuzzy triangular normalizado [0,1].
-    O spread de ±0,10 captura a incerteza inerente ao sensoriamento remoto.
-    """
-    if maximo == minimo:
-        return NumeroFuzzy(0.5, 0.5, 0.5)
-
-    norm = (valor - minimo) / (maximo - minimo)
-    a = max(0.0, norm - 0.10)
-    b = norm
-    c = min(1.0, norm + 0.10)
-    return NumeroFuzzy(a, b, c)
-
-
-def classificar_por_percentil(resultado: list) -> list:
-    """
-    Classifica os níveis de risco com base nos percentis do conjunto calculado.
-
-    Abordagem relativa: a classificação reflete a posição do município
-    no conjunto analisado, garantindo distribuição real entre os níveis
-    independente do tamanho da amostra ou da completude dos dados.
-
-      Top 10%  → CRÍTICO
-      10–25%   → ALTO
-      25–50%   → MÉDIO
-      abaixo   → BAIXO
-    """
-    if not resultado:
-        return resultado
-
-    scores = sorted([r["score_topsis"] for r in resultado], reverse=True)
-    n = len(scores)
-
-    p10 = scores[max(0, int(n * 0.10) - 1)]
-    p25 = scores[max(0, int(n * 0.25) - 1)]
-    p50 = scores[max(0, int(n * 0.50) - 1)]
-
-    for r in resultado:
-        s = r["score_topsis"]
-        if s >= p10:
-            r["nivel_risco"] = "CRITICO"
-        elif s >= p25:
-            r["nivel_risco"] = "ALTO"
-        elif s >= p50:
-            r["nivel_risco"] = "MEDIO"
-        else:
-            r["nivel_risco"] = "BAIXO"
-
-    return resultado
-
-
-def calcular_topsis_fuzzy(
-    alternativas: List[dict],
-    pesos: dict = None
-) -> List[dict]:
-    """
-    Executa o TOPSIS Fuzzy e retorna as alternativas com score e ranking.
+    Executa o algoritmo TOPSIS Fuzzy (Chen, 2000) sobre as alternativas.
 
     Parâmetros
     ----------
-    alternativas : lista de dicts com as métricas de cada município.
-        Cada dict deve conter:
-          nome, municipio, estado, bioma,
-          total_focos, frp_media, risco_historico_medio,
-          dias_sem_chuva_medio, precipitacao_media
+    alternativas : list[dict]
+        Cada dicionário deve conter as chaves de CRITERIOS com valores numéricos.
+    pesos : dict | None
+        Mapeamento {nome_criterio: (l, m, u)}.
+        Quando None, usa PESOS_PADRAO (pesos padrão do IgnisGeo).
 
-    pesos : dict com pesos linguísticos por critério (opcional).
-        Se None, usa os pesos padrão definidos abaixo.
+    Classificação de nível de risco por PERCENTIL DE RANKING:
+      Top 10%   → CRITICO
+      10%–25%   → ALTO
+      25%–50%   → MEDIO
+      Acima 50% → BAIXO
+    Usa max(1, n × p) para garantir pelo menos 1 CRITICO em qualquer n.
 
     Retorna
     -------
-    Lista de dicts com score_topsis, nivel_risco e ranking,
-    ordenada por score decrescente.
+    list[dict]
+        Lista ordenada por ranking (1 = maior risco) com campos:
+        nome, municipio, estado, bioma, score_topsis, ranking,
+        nivel_risco e os 5 critérios.
     """
-
+    if pesos is None:
+        pesos = PESOS_PADRAO
     if not alternativas:
         return []
 
-    # Pesos padrão — escala linguística fuzzy (Chen, 2000)
-    # Justificativa: critérios são indicadores já processados pelo INPE,
-    # cuja hierarquia é objetivamente derivada da natureza dos dados,
-    # dispensando comparações par-a-par do AHP.
-    if pesos is None:
-        pesos = {
-            "total_focos":           PESOS_LINGUISTICOS["muito_alto"],  # C1
-            "frp_media":             PESOS_LINGUISTICOS["muito_alto"],  # C2
-            "risco_historico_medio": PESOS_LINGUISTICOS["alto"],        # C3
-            "dias_sem_chuva_medio":  PESOS_LINGUISTICOS["alto"],        # C4
-            "precipitacao_media":    PESOS_LINGUISTICOS["medio"],       # C5 (custo)
-        }
+    n = len(alternativas)
+    k = len(CRITERIOS)
 
-    criterios  = list(pesos.keys())
-    n_alt      = len(alternativas)
-    n_crit     = len(criterios)
-
-    # --- Passo 1: Normalizar os valores reais em números fuzzy ---
-    valores_brutos = {c: [a[c] for a in alternativas] for c in criterios}
-    minimos = {c: min(v) for c, v in valores_brutos.items()}
-    maximos = {c: max(v) for c, v in valores_brutos.items()}
-
-    matriz_fuzzy = []
+    # ── 1. Extrai matriz de valores brutos ────────────────────────────
+    matriz = []
     for alt in alternativas:
+        linha = [float(alt.get(c, 0) or 0) for c in CRITERIOS]
+        matriz.append(linha)
+
+    # ── 2. Normaliza cada critério para NFT com spread ±0.10 ──────────
+    # Critério custo: inverte o valor antes de normalizar
+    nft_matriz = []
+    for i in range(n):
+        linha_nft = []
+        for j, crit in enumerate(CRITERIOS):
+            col   = [matriz[ii][j] for ii in range(n)]
+            min_v = min(col)
+            max_v = max(col)
+            val   = matriz[i][j]
+            if crit in CRITERIOS_CUSTO:
+                # Inversão: alta precipitação → baixo risco
+                val = max_v - val + min_v
+            linha_nft.append(normalizar_fuzzy(val, min_v, max_v))
+        nft_matriz.append(linha_nft)
+
+    # ── 3. Pondera cada NFT pelo peso linguístico do critério ─────────
+    def ponderar(nft: NumeroFuzzy, peso_tuple: tuple) -> NumeroFuzzy:
+        l, m, u = peso_tuple
+        return NumeroFuzzy(nft.a * l, nft.b * m, nft.c * u)
+
+    v = []
+    for i in range(n):
         linha = []
-        for c in criterios:
-            if c in CRITERIOS_CUSTO:
-                # Critério de custo: inverte antes de normalizar
-                # precipitação alta = menor risco → inverte para benefício
-                val_inv = maximos[c] - alt[c] + minimos[c]
-                fuz = normalizar_fuzzy(val_inv, minimos[c], maximos[c])
-            else:
-                fuz = normalizar_fuzzy(alt[c], minimos[c], maximos[c])
-            linha.append(fuz)
-        matriz_fuzzy.append(linha)
+        for j, crit in enumerate(CRITERIOS):
+            peso = pesos.get(crit, PESOS_PADRAO[crit])
+            linha.append(ponderar(nft_matriz[i][j], peso))
+        v.append(linha)
 
-    # --- Passo 2: Matriz de decisão fuzzy ponderada ---
-    # v_ij = w_j ⊗ r_ij (multiplicação componente a componente)
-    def multiplicar_fuzzy(w: NumeroFuzzy, r: NumeroFuzzy) -> NumeroFuzzy:
-        return NumeroFuzzy(w.a * r.a, w.b * r.b, w.c * r.c)
+    # ── 4. FPIS (Fuzzy Positive Ideal Solution) e FNIS ───────────────
+    fpis = []
+    fnis = []
+    for j in range(k):
+        col     = [v[i][j] for i in range(n)]
+        idx_max = max(range(n), key=lambda i: col[i].b)
+        idx_min = min(range(n), key=lambda i: col[i].b)
+        fpis.append(col[idx_max])
+        fnis.append(col[idx_min])
 
-    pesos_lista = [pesos[c] for c in criterios]
-    matriz_ponderada = [
-        [multiplicar_fuzzy(pesos_lista[j], matriz_fuzzy[i][j])
-         for j in range(n_crit)]
-        for i in range(n_alt)
-    ]
+    # ── 5. Distâncias ao FPIS e ao FNIS (métrica de vértice) ─────────
+    d_pos = []
+    d_neg = []
+    for i in range(n):
+        dp = math.sqrt(sum(v[i][j].distancia(fpis[j]) ** 2 for j in range(k)))
+        dn = math.sqrt(sum(v[i][j].distancia(fnis[j]) ** 2 for j in range(k)))
+        d_pos.append(dp)
+        d_neg.append(dn)
 
-    # --- Passo 3: Soluções ideais positiva (A+) e negativa (A-) ---
-    ideal_pos = [NumeroFuzzy(1.0, 1.0, 1.0)] * n_crit
-    ideal_neg = [NumeroFuzzy(0.0, 0.0, 0.0)] * n_crit
+    # ── 6. Coeficiente de similaridade CCᵢ ∈ [0, 1] ──────────────────
+    cc = []
+    for i in range(n):
+        denom = d_pos[i] + d_neg[i]
+        cc.append(d_neg[i] / denom if denom > 1e-12 else 0.0)
 
-    # --- Passo 4: Distâncias às soluções ideais (vertex method) ---
-    distancias_pos = []
-    distancias_neg = []
+    # ── 7. Ordena por CCᵢ decrescente ────────────────────────────────
+    ordem = sorted(range(n), key=lambda i: cc[i], reverse=True)
 
-    for i in range(n_alt):
-        d_pos = sum(
-            matriz_ponderada[i][j].distancia(ideal_pos[j])
-            for j in range(n_crit)
-        )
-        d_neg = sum(
-            matriz_ponderada[i][j].distancia(ideal_neg[j])
-            for j in range(n_crit)
-        )
-        distancias_pos.append(d_pos)
-        distancias_neg.append(d_neg)
+    # ── 8. Classifica nível por percentil de ranking ──────────────────
+    # max(1, n × p): garante pelo menos 1 CRITICO para qualquer n ≥ 1
+    lim_critico = max(1, n * 0.10)
+    lim_alto    = max(1, n * 0.25)
+    lim_medio   = max(1, n * 0.50)
 
-    # --- Passo 5: Coeficiente de similaridade CC_i ---
-    # CC_i = d_neg / (d_pos + d_neg) ∈ [0, 1]
-    # Quanto maior CC_i, maior o risco relativo do município
-    scores = []
-    for i in range(n_alt):
-        denominador = distancias_pos[i] + distancias_neg[i]
-        score = distancias_neg[i] / denominador if denominador > 0 else 0.0
-        scores.append(score)
+    def nivel_percentil(rank: int) -> str:
+        if rank <= lim_critico: return "CRITICO"
+        if rank <= lim_alto:    return "ALTO"
+        if rank <= lim_medio:   return "MEDIO"
+        return "BAIXO"
 
-    # --- Passo 6: Monta resultado, ordena e atribui ranking ---
+    # ── 9. Monta resultado ────────────────────────────────────────────
     resultado = []
-    for i, alt in enumerate(alternativas):
+    for rank, idx in enumerate(ordem, start=1):
+        alt = alternativas[idx]
         resultado.append({
-            **alt,
-            "score_topsis": round(scores[i], 4),
-            "nivel_risco":  "BAIXO",  # sobrescrito pelo percentil
+            "nome":                  alt.get("nome", ""),
+            "municipio":             alt.get("municipio", ""),
+            "estado":                alt.get("estado", ""),
+            "bioma":                 alt.get("bioma", ""),
+            "score_topsis":          round(cc[idx], 4),
+            "ranking":               rank,
+            "nivel_risco":           nivel_percentil(rank),
+            "total_focos":           alt.get("total_focos", 0),
+            "frp_media":             alt.get("frp_media", 0.0),
+            "risco_historico_medio": alt.get("risco_historico_medio", 0.0),
+            "dias_sem_chuva_medio":  alt.get("dias_sem_chuva_medio", 0.0),
+            "precipitacao_media":    alt.get("precipitacao_media", 0.0),
         })
 
-    resultado.sort(key=lambda x: x["score_topsis"], reverse=True)
-    for rank, item in enumerate(resultado, start=1):
-        item["ranking"] = rank
-
-    # Classifica por percentil — garante distribuição real entre os níveis
-    resultado = classificar_por_percentil(resultado)
-
     return resultado
-
-
-def classificar_nivel(score: float) -> str:
-    """
-    Classificação por threshold fixo — mantida para compatibilidade
-    com testes unitários existentes.
-    Para classificação do conjunto completo, use classificar_por_percentil().
-    """
-    if score >= 0.45:
-        return "CRITICO"
-    elif score >= 0.35:
-        return "ALTO"
-    elif score >= 0.25:
-        return "MEDIO"
-    else:
-        return "BAIXO"

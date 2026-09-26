@@ -1,0 +1,243 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 680 862" role="img">
+  <title>Diagrama de Sequência — IgnisGeo v2 (SIGE 2026)</title>
+  <desc>Três fluxos com barras de ativação, blocos alt e separação de responsabilidades: Importação CSV, TOPSIS Fuzzy e Visualização GeoJSON</desc>
+
+  <defs>
+    <!-- Seta síncrona: preenchida azul -->
+    <marker id="ab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0L8 5L0 10Z" fill="#185FA5"/>
+    </marker>
+    <!-- Seta síncrona: preenchida marrom (Celery) -->
+    <marker id="am" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0L8 5L0 10Z" fill="#854F0B"/>
+    </marker>
+    <!-- Seta síncrona: preenchida verde (delegação) -->
+    <marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0L8 5L0 10Z" fill="#0F6E56"/>
+    </marker>
+    <!-- Seta aberta: retorno cinza -->
+    <marker id="ar" viewBox="0 0 12 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M2 1L10 5L2 9" fill="none" stroke="#B4B2A9" stroke-width="1.5" stroke-linecap="round"/>
+    </marker>
+    <!-- Seta aberta assíncrona: marrom -->
+    <marker id="aas" viewBox="0 0 12 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M2 1L10 5L2 9" fill="none" stroke="#854F0B" stroke-width="1.5" stroke-linecap="round"/>
+    </marker>
+    <!-- Seta aberta erro: vermelho -->
+    <marker id="ae" viewBox="0 0 12 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M2 1L10 5L2 9" fill="none" stroke="#CC3333" stroke-width="1.5" stroke-linecap="round"/>
+    </marker>
+    <!-- Seta aberta: laranja (204 / vazio) -->
+    <marker id="ao" viewBox="0 0 12 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M2 1L10 5L2 9" fill="none" stroke="#CC6600" stroke-width="1.5" stroke-linecap="round"/>
+    </marker>
+    <!-- Seta azul (self-loop frontend) -->
+    <marker id="abl" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0L8 5L0 10Z" fill="#185FA5"/>
+    </marker>
+  </defs>
+
+  <!-- ══════════════════════════════════════
+       PARTICIPANTES
+       ══════════════════════════════════════ -->
+
+  <!-- Frontend -->
+  <rect x="20" y="20" width="110" height="46" rx="6" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/>
+  <text font-family="sans-serif" font-size="11.5" font-weight="700" fill="#0C447C" x="75" y="38" text-anchor="middle">:Frontend</text>
+  <text font-family="sans-serif" font-size="10" fill="#185FA5" x="75" y="54" text-anchor="middle">Vue 3 + Leaflet</text>
+
+  <!-- API Django -->
+  <rect x="178" y="20" width="110" height="46" rx="6" fill="#E1F5EE" stroke="#0F6E56" stroke-width="1"/>
+  <text font-family="sans-serif" font-size="11.5" font-weight="700" fill="#085041" x="233" y="38" text-anchor="middle">:API Django</text>
+  <text font-family="sans-serif" font-size="10" fill="#0F6E56" x="233" y="54" text-anchor="middle">DRF + GeoDjango</text>
+
+  <!-- Serviço TOPSIS (ex-Celery Worker) -->
+  <rect x="331" y="20" width="120" height="46" rx="6" fill="#FAEEDA" stroke="#854F0B" stroke-width="1"/>
+  <text font-family="sans-serif" font-size="11.5" font-weight="700" fill="#633806" x="391" y="36" text-anchor="middle">:Serviço TOPSIS</text>
+  <text font-family="sans-serif" font-size="10" fill="#854F0B" x="391" y="54" text-anchor="middle">Celery + NumPy/SciPy</text>
+
+  <!-- PostGIS -->
+  <rect x="496" y="20" width="116" height="46" rx="6" fill="#EEEDFE" stroke="#534AB7" stroke-width="1"/>
+  <text font-family="sans-serif" font-size="11.5" font-weight="700" fill="#3C3489" x="554" y="38" text-anchor="middle">:PostGIS</text>
+  <text font-family="sans-serif" font-size="10" fill="#534AB7" x="554" y="54" text-anchor="middle">PostgreSQL + geo</text>
+
+  <!-- ══════════════════════════════════════
+       LIFELINES (cx: 75 | 233 | 391 | 554)
+       ══════════════════════════════════════ -->
+  <line x1="75"  y1="66" x2="75"  y2="820" stroke="#85B7EB" stroke-width="1" stroke-dasharray="4 3"/>
+  <line x1="233" y1="66" x2="233" y2="820" stroke="#5DCAA5" stroke-width="1" stroke-dasharray="4 3"/>
+  <line x1="391" y1="66" x2="391" y2="820" stroke="#EF9F27" stroke-width="1" stroke-dasharray="4 3"/>
+  <line x1="554" y1="66" x2="554" y2="820" stroke="#AFA9EC" stroke-width="1" stroke-dasharray="4 3"/>
+
+  <!-- ══════════════════════════════════════
+       FLUXO 1 — Importação CSV (Celery)
+       ══════════════════════════════════════ -->
+  <rect x="12" y="82" width="640" height="22" rx="3" fill="#F1EFE8" stroke="#D3D1C7" stroke-width="0.5"/>
+  <text font-family="sans-serif" font-size="10.5" fill="#5F5E5A" x="18" y="96">① Importação de dados — CSV INPE  (assíncrona via Celery)</text>
+
+  <!-- Barras de ativação — Fluxo 1 -->
+  <rect x="228" y="108" width="10" height="152" rx="1" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.8"/>
+  <rect x="386" y="136" width="10" height="80"  rx="1" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.8"/>
+  <rect x="549" y="178" width="10" height="30"  rx="1" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/>
+
+  <!-- m1: POST /api/importar-csv/ (síncrona) -->
+  <text font-family="sans-serif" font-size="10" fill="#333333" x="153" y="112" text-anchor="middle">POST /api/importar-csv/</text>
+  <line x1="77" y1="118" x2="226" y2="118" stroke="#185FA5" stroke-width="1.5" marker-end="url(#ab)"/>
+
+  <!-- m2: dispatch importar_csv.delay() (ASSÍNCRONA — ponta aberta) -->
+  <text font-family="sans-serif" font-size="10" fill="#333333" x="311" y="130" text-anchor="middle">dispatch importar_csv.delay()</text>
+  <line x1="238" y1="136" x2="384" y2="136" stroke="#854F0B" stroke-width="1.5" marker-end="url(#aas)"/>
+
+  <!-- m3: {task_id} resposta imediata (tracejada) -->
+  <text font-family="sans-serif" font-size="10" fill="#777775" x="153" y="152" text-anchor="middle">{ task_id } — resposta imediata</text>
+  <line x1="228" y1="158" x2="79"  y2="158" stroke="#B4B2A9" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+
+  <!-- m4: bulk_create focos (Serviço → PostGIS) -->
+  <text font-family="sans-serif" font-size="10" fill="#333333" x="470" y="172" text-anchor="middle">bulk_create focos (500/lote)</text>
+  <line x1="396" y1="178" x2="547" y2="178" stroke="#854F0B" stroke-width="1.5" marker-end="url(#am)"/>
+
+  <!-- m5: OK — n registros (tracejada) -->
+  <text font-family="sans-serif" font-size="10" fill="#777775" x="470" y="194" text-anchor="middle">OK — n registros inseridos</text>
+  <line x1="549" y1="200" x2="398" y2="200" stroke="#B4B2A9" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+
+  <!-- ALT 1: DB timeout -->
+  <rect x="12" y="216" width="640" height="48" rx="2" fill="#FFF8F8" stroke="#CC3333" stroke-width="1" stroke-dasharray="4 3"/>
+  <rect x="12" y="216" width="28"  height="15" rx="1" fill="#FADDDD" stroke="#CC3333" stroke-width="0.8"/>
+  <text font-family="sans-serif" font-size="9" font-weight="700" fill="#AA2222" x="26" y="226" text-anchor="middle">alt</text>
+  <text font-family="sans-serif" font-size="10" font-style="italic" fill="#CC3333" x="44" y="229">[ DB timeout ou falha na inserção ]</text>
+  <text font-family="sans-serif" font-size="10" fill="#CC3333" x="153" y="244" text-anchor="middle">503 Service Unavailable</text>
+  <line x1="228" y1="250" x2="79"  y2="250" stroke="#CC3333" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#ae)"/>
+
+  <!-- ══════════════════════════════════════
+       FLUXO 2 — TOPSIS Fuzzy (Separation of Concerns)
+       ══════════════════════════════════════ -->
+  <rect x="12" y="276" width="640" height="22" rx="3" fill="#F1EFE8" stroke="#D3D1C7" stroke-width="0.5"/>
+  <text font-family="sans-serif" font-size="10.5" fill="#5F5E5A" x="18" y="290">② Cálculo TOPSIS Fuzzy — análise multicritério  (lógica delegada ao Serviço — Separation of Concerns)</text>
+
+  <!-- Barras de ativação — Fluxo 2 -->
+  <rect x="228" y="302" width="10" height="198" rx="1" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.8"/>
+  <rect x="549" y="326" width="10" height="24"  rx="1" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/>
+  <rect x="386" y="368" width="10" height="56"  rx="1" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.8"/>
+  <rect x="549" y="442" width="10" height="24"  rx="1" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/>
+
+  <!-- m6: POST /api/calcular-topsis/ -->
+  <text font-family="sans-serif" font-size="10" fill="#333333" x="153" y="306" text-anchor="middle">POST /api/calcular-topsis/</text>
+  <line x1="77" y1="312" x2="226" y2="312" stroke="#185FA5" stroke-width="1.5" marker-end="url(#ab)"/>
+
+  <!-- m7: aggregate métricas (API → PostGIS) -->
+  <text font-family="sans-serif" font-size="10" fill="#333333" x="393" y="320" text-anchor="middle">aggregate métricas por município</text>
+  <line x1="238" y1="326" x2="547" y2="326" stroke="#185FA5" stroke-width="1.5" marker-end="url(#ab)"/>
+
+  <!-- m8: focos, FRP, risco, vento, NDVI (tracejada) -->
+  <text font-family="sans-serif" font-size="10" fill="#777775" x="393" y="344" text-anchor="middle">focos, FRP, risco, vento, NDVI</text>
+  <line x1="549" y1="350" x2="240" y2="350" stroke="#B4B2A9" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+
+  <!-- m9: calcular_topsis(dados) — API → SERVIÇO (correção arquitetural) -->
+  <text font-family="sans-serif" font-size="10" fill="#0F6E56" font-weight="600" x="311" y="362" text-anchor="middle">calcular_topsis(dados)</text>
+  <line x1="238" y1="368" x2="384" y2="368" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#ag)"/>
+
+  <!-- m10: self-loop no SERVIÇO (calcular_topsis_fuzzy) -->
+  <text font-family="sans-serif" font-size="10" fill="#854F0B" x="432" y="385">calcular_topsis_fuzzy()</text>
+  <text font-family="sans-serif" font-size="10" fill="#854F0B" x="432" y="400">NumPy + SciPy</text>
+  <path d="M391 384 L422 384 L422 406 L393 406" fill="none" stroke="#854F0B" stroke-width="1.5" marker-end="url(#am)"/>
+
+  <!-- m11: {scores, ranking} (Serviço → API, tracejada) -->
+  <text font-family="sans-serif" font-size="10" fill="#777775" x="311" y="416" text-anchor="middle">{ scores, ranking }</text>
+  <line x1="386" y1="422" x2="240" y2="422" stroke="#B4B2A9" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+
+  <!-- m12: save AreaRisco (API → PostGIS) -->
+  <text font-family="sans-serif" font-size="10" fill="#333333" x="393" y="436" text-anchor="middle">save AreaRisco — score + ranking + nível</text>
+  <line x1="238" y1="442" x2="547" y2="442" stroke="#185FA5" stroke-width="1.5" marker-end="url(#ab)"/>
+
+  <!-- m13: OK — persistido (tracejada) -->
+  <text font-family="sans-serif" font-size="10" fill="#777775" x="393" y="460" text-anchor="middle">OK — persistido</text>
+  <line x1="549" y1="466" x2="240" y2="466" stroke="#B4B2A9" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+
+  <!-- m14: {ranking, top_5, scores} (API → Frontend, tracejada) -->
+  <text font-family="sans-serif" font-size="10" fill="#777775" x="153" y="482" text-anchor="middle">{ ranking, top_5, scores }</text>
+  <line x1="228" y1="488" x2="79"  y2="488" stroke="#B4B2A9" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+
+  <!-- ALT 2: sem focos no período -->
+  <rect x="12" y="500" width="640" height="46" rx="2" fill="#FFFDF5" stroke="#CC6600" stroke-width="1" stroke-dasharray="4 3"/>
+  <rect x="12" y="500" width="28"  height="15" rx="1" fill="#FDEFD8" stroke="#CC6600" stroke-width="0.8"/>
+  <text font-family="sans-serif" font-size="9" font-weight="700" fill="#994400" x="26" y="510" text-anchor="middle">alt</text>
+  <text font-family="sans-serif" font-size="10" font-style="italic" fill="#CC6600" x="44" y="513">[ sem focos no período selecionado ]</text>
+  <text font-family="sans-serif" font-size="10" fill="#CC6600" x="153" y="528" text-anchor="middle">204 No Content</text>
+  <line x1="228" y1="534" x2="79"  y2="534" stroke="#CC6600" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#ao)"/>
+
+  <!-- ══════════════════════════════════════
+       FLUXO 3 — Visualização GeoJSON + Leaflet
+       ══════════════════════════════════════ -->
+  <rect x="12" y="558" width="640" height="22" rx="3" fill="#F1EFE8" stroke="#D3D1C7" stroke-width="0.5"/>
+  <text font-family="sans-serif" font-size="10.5" fill="#5F5E5A" x="18" y="572">③ Visualização no mapa — GeoJSON + Leaflet  (renderização client-side)</text>
+
+  <!-- Barras de ativação — Fluxo 3 -->
+  <rect x="228" y="584" width="10" height="82"  rx="1" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.8"/>
+  <rect x="549" y="614" width="10" height="24"  rx="1" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/>
+  <rect x="70"  y="668" width="10" height="24"  rx="1" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.8"/>
+
+  <!-- m15: GET /api/focos/geojson/ -->
+  <text font-family="sans-serif" font-size="10" fill="#333333" x="153" y="588" text-anchor="middle">GET /api/focos/geojson/?bioma=CERRADO</text>
+  <line x1="77" y1="594" x2="226" y2="594" stroke="#185FA5" stroke-width="1.5" marker-end="url(#ab)"/>
+
+  <!-- m16: SELECT + ST_Within(bbox) LIMIT 5000 -->
+  <text font-family="sans-serif" font-size="10" fill="#333333" x="393" y="608" text-anchor="middle">SELECT + ST_Within(bbox) LIMIT 5000</text>
+  <line x1="238" y1="614" x2="547" y2="614" stroke="#185FA5" stroke-width="1.5" marker-end="url(#ab)"/>
+
+  <!-- m17: GeoJSON features (tracejada) -->
+  <text font-family="sans-serif" font-size="10" fill="#777775" x="393" y="632" text-anchor="middle">GeoJSON features (lat, lon, FRP, bioma…)</text>
+  <line x1="549" y1="638" x2="240" y2="638" stroke="#B4B2A9" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+
+  <!-- m18: FeatureCollection GeoJSON (tracejada) -->
+  <text font-family="sans-serif" font-size="10" fill="#777775" x="153" y="654" text-anchor="middle">FeatureCollection GeoJSON</text>
+  <line x1="228" y1="660" x2="79"  y2="660" stroke="#B4B2A9" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+
+  <!-- m19: self-loop Frontend — Leaflet (client-side) -->
+  <text font-family="sans-serif" font-size="10" fill="#185FA5" x="114" y="672">Leaflet: renderiza pontos +</text>
+  <text font-family="sans-serif" font-size="10" fill="#185FA5" x="114" y="685">heatmap + polígonos (client-side)</text>
+  <path d="M75 668 L106 668 L106 690 L77 690" fill="none" stroke="#185FA5" stroke-width="1.5" marker-end="url(#abl)"/>
+
+  <!-- ALT 3: focos = ∅ -->
+  <rect x="12" y="704" width="640" height="46" rx="2" fill="#FFFDF5" stroke="#CC6600" stroke-width="1" stroke-dasharray="4 3"/>
+  <rect x="12" y="704" width="28"  height="15" rx="1" fill="#FDEFD8" stroke="#CC6600" stroke-width="0.8"/>
+  <text font-family="sans-serif" font-size="9" font-weight="700" fill="#994400" x="26" y="714" text-anchor="middle">alt</text>
+  <text font-family="sans-serif" font-size="10" font-style="italic" fill="#CC6600" x="44" y="717">[ focos = ∅ para o filtro aplicado ]</text>
+  <text font-family="sans-serif" font-size="10" fill="#CC6600" x="153" y="734" text-anchor="middle">exibe: "Nenhum foco encontrado"</text>
+  <line x1="228" y1="740" x2="79"  y2="740" stroke="#CC6600" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#ao)"/>
+
+  <!-- ══════════════════════════════════════
+       LEGENDA
+       ══════════════════════════════════════ -->
+  <rect x="12" y="758" width="640" height="58" rx="4" fill="#F9F9F9" stroke="#CCCCCC" stroke-width="0.8"/>
+  <text font-family="sans-serif" font-size="10" font-weight="700" fill="#444444" x="18" y="772">Legenda</text>
+
+  <!-- Req. síncrona -->
+  <line x1="18"  y1="786" x2="52"  y2="786" stroke="#185FA5" stroke-width="1.5" marker-end="url(#ab)"/>
+  <text font-family="sans-serif" font-size="10" fill="#444444" x="58" y="790">Req. síncrona</text>
+
+  <!-- Req. assíncrona -->
+  <line x1="140" y1="786" x2="174" y2="786" stroke="#854F0B" stroke-width="1.5" marker-end="url(#aas)"/>
+  <text font-family="sans-serif" font-size="10" fill="#444444" x="180" y="790">Req. assíncrona</text>
+
+  <!-- Retorno/resposta -->
+  <line x1="282" y1="786" x2="316" y2="786" stroke="#B4B2A9" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+  <text font-family="sans-serif" font-size="10" fill="#444444" x="322" y="790">Retorno / resposta</text>
+
+  <!-- Delegação ao Serviço -->
+  <line x1="424" y1="786" x2="458" y2="786" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#ag)"/>
+  <text font-family="sans-serif" font-size="10" fill="#444444" x="464" y="790">Delegação ao Serviço</text>
+
+  <!-- Retorno de erro (5xx) -->
+  <line x1="18"  y1="804" x2="52"  y2="804" stroke="#CC3333" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#ae)"/>
+  <text font-family="sans-serif" font-size="10" fill="#444444" x="58" y="808">Retorno de erro (5xx)</text>
+
+  <!-- 204 / estado vazio -->
+  <line x1="140" y1="804" x2="174" y2="804" stroke="#CC6600" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#ao)"/>
+  <text font-family="sans-serif" font-size="10" fill="#444444" x="180" y="808">Sem conteúdo / estado vazio</text>
+
+  <!-- ══════════════════════════════════════
+       NOTA ARQUITETURAL
+       ══════════════════════════════════════ -->
+  <rect x="12" y="824" width="640" height="28" rx="4" fill="#F0FAF5" stroke="#0F6E56" stroke-width="0.8"/>
+  <text font-family="sans-serif" font-size="9.5" fill="#085041" x="18" y="841">★  calcular_topsis_fuzzy() movido para o Serviço TOPSIS (Entidade 3) — o Controlador orquestra, o Serviço calcula (Separation of Concerns).</text>
+</svg>
