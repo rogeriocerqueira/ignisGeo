@@ -19,14 +19,14 @@ Desenvolver uma plataforma de análise geoespacial que integre dados de focos de
 
 ---
 
-## Metodologia — TOPSIS Fuzzy
+## Metodologia : TOPSIS Fuzzy
 
 O método **TOPSIS** (*Technique for Order of Preference by Similarity to Ideal Solution*) com extensão fuzzy triangular (Chen, 2000) é utilizado para ordenar as alternativas (municípios) com base em cinco critérios:
 
 | Critério | Peso Linguístico | Justificativa |
 |---|---|---|
 | Total de focos | Muito alto | Quantidade de ocorrências no período |
-| FRP médio (MW) | Muito alto | Potência Radiativa do Fogo — intensidade |
+| FRP médio (MW) | Muito alto | Potência Radiativa do Fogo : intensidade |
 | Risco histórico | Alto | Recorrência da área em séries históricas |
 | Velocidade do vento | Médio | Capacidade de propagação do fogo |
 | NDVI (vegetação) | Alto | Quantidade de biomassa disponível (critério invertido) |
@@ -44,17 +44,17 @@ Score  < 0.35 →  Baixo
 
 ## Arquitetura do Sistema
 
-### Visão de componentes — o que existe e como se conecta
+### Visão de componentes : o que existe e como se conecta
 
 Diagrama no estilo **C4 Container** mostrando os cinco containers internos do sistema, os dois atores externos e os relacionamentos entre eles.
 
-![Diagrama de Componentes C4 — IgnisGeo](diagrama-componentes-c4.svg)
+![Diagrama de Componentes C4 : IgnisGeo](diagrama-componentes-c4.svg)
 
-### Visão de sequência — o que acontece e quando
+### Visão de sequência : o que acontece e quando
 
 Os três fluxos principais de comunicação em tempo de execução: importação assíncrona dos dados do INPE via Celery, execução do TOPSIS Fuzzy e visualização dos resultados em GeoJSON pelo Leaflet.
 
-![Diagrama de Sequência — IgnisGeo](diagrama-sequencia-queimadas.svg)
+![Diagrama de Sequência : IgnisGeo](diagrama-sequencia-queimadas.svg)
 
 > Os dois diagramas são complementares: o de componentes documenta a **estrutura estática** do sistema; o de sequência documenta o **comportamento dinâmico** em cada fluxo de uso.
 
@@ -65,13 +65,13 @@ Os três fluxos principais de comunicação em tempo de execução: importação
 | Camada | Tecnologia | Versão |
 |---|---|---|
 | Backend | Django + Django REST Framework | 5.0 / 3.15 |
-| Análise geoespacial | GeoDjango + GeoPandas + Shapely | — |
+| Análise geoespacial | GeoDjango + GeoPandas + Shapely | : |
 | Análise multicritério | NumPy + SciPy (TOPSIS Fuzzy) | 2.0 / 1.13 |
 | Banco de dados | PostgreSQL + PostGIS | 16 / 3.4 |
 | Filas assíncronas | Celery + Redis | 5.4 / 7 |
 | Frontend | Vue 3 + Pinia + Leaflet | 3.4 / 2.1 / 1.9 |
-| Infraestrutura | Docker + Docker Compose | — |
-| Fonte de dados | INPE BDQueimadas | — |
+| Infraestrutura | Docker + Docker Compose | : |
+| Fonte de dados | INPE BDQueimadas | : |
 
 ---
 
@@ -148,9 +148,9 @@ curl -X POST http://localhost:8000/api/calcular-topsis/ \
 
 ---
 
-## Banco de Dados — ERD
+## Banco de Dados : ERD
 
-As duas tabelas geradas pelo Django no PostgreSQL + PostGIS. Não há chave estrangeira direta entre elas — `queimadas_arearisco` é populada pelo algoritmo TOPSIS Fuzzy que agrega os dados de `queimadas_focoqueimada` por município/bioma.
+As duas tabelas geradas pelo Django no PostgreSQL + PostGIS. Não há chave estrangeira direta entre elas : `queimadas_arearisco` é populada pelo algoritmo TOPSIS Fuzzy que agrega os dados de `queimadas_focoqueimada` por município/bioma.
 
 ```mermaid
 erDiagram
@@ -196,9 +196,9 @@ erDiagram
 
 ---
 
-## Banco de Dados — ERD
+## Banco de Dados : ERD
 
-Estrutura das tabelas no PostgreSQL + PostGIS. Os nomes seguem a convenção do Django (`appname_modelname`). O relacionamento entre as tabelas é **lógico** — `AreaRisco` é calculada agregando registros de `FocoQueimada` via TOPSIS Fuzzy, sem chave estrangeira física.
+Estrutura das tabelas no PostgreSQL + PostGIS. Os nomes seguem a convenção do Django (`appname_modelname`). O relacionamento entre as tabelas é **lógico** : `AreaRisco` é calculada agregando registros de `FocoQueimada` via TOPSIS Fuzzy, sem chave estrangeira física.
 
 ```mermaid
 erDiagram
@@ -346,7 +346,7 @@ ignisgeo/
 │   └── Dockerfile
 ├── frontend/
 │   └── src/
-│       ├── api/                 # Axios — chamadas ao backend
+│       ├── api/                 # Axios : chamadas ao backend
 │       ├── components/          # MapaQueimadas, FiltrosPainel, PainelRanking
 │       └── stores/              # Pinia store
 ├── data/                        # CSVs do INPE (não versionados)
@@ -384,8 +384,8 @@ Cada registro contém: latitude, longitude, data/hora (GMT), satélite, municíp
 ## Licença
 
 Este projeto foi desenvolvido como Trabalho de Conclusão de Curso e é disponibilizado para fins acadêmicos.  
-Licença [MIT](LICENSE) — sinta-se livre para estudar, adaptar e referenciar com a devida citação.
+Licença [MIT](LICENSE) : sinta-se livre para estudar, adaptar e referenciar com a devida citação.
 
 ---
 
-> *"Ignis é fogo em latim — IgnisGeo nasceu da necessidade de enxergar onde o fogo vai antes que ele chegue."*
+> *"Ignis é fogo em latim : IgnisGeo nasceu da necessidade de enxergar onde o fogo vai antes que ele chegue."*
