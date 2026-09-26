@@ -18,7 +18,10 @@ from .serializers import (
     AreaRiscoRankingSerializer,
 )
 from .topsis_fuzzy import calcular_topsis_fuzzy
-from .tasks import importar_csv_inpe
+import os
+import tempfile
+
+from .tasks import importar_csv_inpe, processar_csv
 
 
 class RankingPagination(PageNumberPagination):
@@ -367,6 +370,37 @@ def calcular_topsis_view(request):
 @csrf_exempt
 @api_view(["POST"])
 def importar_csv_view(request):
+    """
+    POST /api/importar-csv/
+
+    Duas formas de uso:
+      1. multipart/form-data com o campo `arquivo` (CSV do INPE) — o arquivo
+         é importado na hora. É a forma usada em produção (Render), onde o
+         servidor não tem a pasta data/.
+      2. JSON {"caminho": "/app/data/arquivo.csv"} — arquivo já presente no
+         servidor, importado via Celery (uso local com docker-compose).
+    """
+    arquivo = request.FILES.get("arquivo")
+    if arquivo:
+        if not arquivo.name.lower().endswith(".csv"):
+            return Response(
+                {"erro": "Envie um arquivo .csv do INPE."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        with tempfile.NamedTemporaryFile(suffix=".csv", delete=False) as tmp:
+            for chunk in arquivo.chunks():
+                tmp.write(chunk)
+            caminho_tmp = tmp.name
+        try:
+            resultado = processar_csv(caminho_tmp)
+        finally:
+            os.remove(caminho_tmp)
+        return Response({
+            "mensagem": "Importação concluída.",
+            "arquivo":  arquivo.name,
+            **resultado,
+        })
+
     caminho = request.data.get("caminho", "/app/data/focos_mensal.csv")
     task = importar_csv_inpe.delay(caminho)
     return Response({"mensagem": "Importação iniciada.", "task_id": task.id, "caminho": caminho})

@@ -161,44 +161,50 @@ def parse_linha(linha: dict) -> dict | None:
         return None
 
 
-@shared_task(bind=True, max_retries=3)
-def importar_csv_inpe(self, caminho_csv: str):
+def processar_csv(caminho_csv: str) -> dict:
     """
     Importa CSV do INPE BDQueimadas para o banco PostGIS.
     Processamento em lotes de 500 registros via bulk_create.
+    Usado pela task Celery, pela API de upload e pelo comando
+    `python manage.py importar_csv`.
     """
     importados = 0
     erros = 0
 
-    try:
-        with open(caminho_csv, encoding="utf-8-sig") as f:
-            reader = csv.DictReader(f)
-            lote = []
+    with open(caminho_csv, encoding="utf-8-sig") as f:
+        reader = csv.DictReader(f)
+        lote = []
 
-            for linha in reader:
-                dados = parse_linha(linha)
-                if dados is None:
-                    erros += 1
-                    continue
+        for linha in reader:
+            dados = parse_linha(linha)
+            if dados is None:
+                erros += 1
+                continue
 
-                lote.append(FocoQueimada(**dados))
+            lote.append(FocoQueimada(**dados))
 
-                if len(lote) >= 500:
-                    FocoQueimada.objects.bulk_create(lote, ignore_conflicts=True)
-                    importados += len(lote)
-                    logger.info(f"Importados {importados} focos...")
-                    lote = []
-
-            if lote:
+            if len(lote) >= 500:
                 FocoQueimada.objects.bulk_create(lote, ignore_conflicts=True)
                 importados += len(lote)
+                logger.info(f"Importados {importados} focos...")
+                lote = []
 
+        if lote:
+            FocoQueimada.objects.bulk_create(lote, ignore_conflicts=True)
+            importados += len(lote)
+
+    logger.info(f"Importação concluída: {importados} focos, {erros} erros.")
+    return {"importados": importados, "erros": erros}
+
+
+@shared_task(bind=True, max_retries=3)
+def importar_csv_inpe(self, caminho_csv: str):
+    """Task Celery que envolve processar_csv com novas tentativas."""
+    try:
+        return processar_csv(caminho_csv)
     except FileNotFoundError:
         logger.error(f"Arquivo não encontrado: {caminho_csv}")
         raise self.retry(countdown=60)
     except Exception as exc:
         logger.error(f"Erro ao importar CSV: {exc}")
         raise self.retry(exc=exc, countdown=120)
-
-    logger.info(f"Importação concluída: {importados} focos, {erros} erros.")
-    return {"importados": importados, "erros": erros}
