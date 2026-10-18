@@ -55,18 +55,29 @@ curl -X POST https://ignisgeo-api.onrender.com/api/calcular-topsis/ \
   -d '{"data_inicio": "2024-01-01", "data_fim": "2024-01-31"}'
 ```
 
-**Da sua máquina direto no banco do Render** (melhor para arquivos grandes):
+**Da sua máquina direto no banco do Render, ano a ano** (recomendado para CSVs grandes):
 
-Copie a **External Database URL** em Render → `ignisgeo-db` → **Connect**, e rode:
+Copie a **External Database URL** em Render → `ignisgeo-db` → **Connect**, coloque o CSV em `data/` e rode:
 
 ```bash
-docker compose run --rm -e DATABASE_URL="<External Database URL>" \
-  backend python manage.py importar_csv /app/data/focos_br_ref_2024.csv
+export RENDER_DB="<External Database URL>"
+
+# 1) Só conta quantos focos do ano existem e estima o espaço (não grava nada)
+docker compose run --rm -e DATABASE_URL="$RENDER_DB" backend \
+  python manage.py carregar_ano /app/data/focos.csv --ano 2024 --contar
+
+# 2) Envia o ano via COPY (milhões de linhas em minutos)
+docker compose run --rm -e DATABASE_URL="$RENDER_DB" backend \
+  python manage.py carregar_ano /app/data/focos.csv --ano 2024
 ```
+
+Repita com `--ano 2025` e `--ano 2026`. Se um ano já estiver no banco, o comando recusa;
+use `--substituir` para apagar aquele ano e importar de novo. O banco grátis tem 1 GB
+(cerca de 3 milhões de focos) — confira o tamanho que o comando mostra ao final.
 
 Depois chame o `calcular-topsis` como acima.
 
-> A importação não evita duplicatas: importar o mesmo CSV duas vezes duplica os focos.
+> O upload pela API e o `importar_csv` não evitam duplicatas; o `carregar_ano` sim.
 
 ## Avisos do plano grátis
 
