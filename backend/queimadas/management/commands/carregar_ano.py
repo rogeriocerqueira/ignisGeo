@@ -8,10 +8,12 @@ Exemplos (dentro do docker-compose, com DATABASE_URL apontando para o Render):
     python manage.py carregar_ano /app/data/focos.csv --ano 2024 --contar
     python manage.py carregar_ano /app/data/focos.csv --ano 2024
     python manage.py carregar_ano /app/data/focos.csv --ano 2024 --substituir
+    python manage.py carregar_ano /app/data/focos.csv --ano 2024 --satelites AQUA_M-T
 """
 import csv
 import io
 import time
+from collections import Counter
 from datetime import timezone
 
 from django.core.management.base import BaseCommand, CommandError
@@ -41,9 +43,14 @@ class Command(BaseCommand):
                             help="Só conta quantas linhas do ano existem no CSV, sem gravar nada")
         parser.add_argument("--substituir", action="store_true",
                             help="Apaga os focos desse ano no banco antes de importar (evita duplicar)")
+        parser.add_argument("--satelites", default="",
+                            help="Importa só estes satélites, separados por vírgula "
+                                 "(ex.: AQUA_M-T, o satélite de referência do INPE)")
 
-    def handle(self, *args, caminho, ano, lote, contar, substituir, **options):
+    def handle(self, *args, caminho, ano, lote, contar, substituir, satelites, **options):
         tabela = FocoQueimada._meta.db_table
+        filtro_sat = {s.strip().upper() for s in satelites.split(",") if s.strip()}
+        por_satelite = Counter()
         agora = time.strftime("%Y-%m-%d %H:%M:%S+00", time.gmtime())
 
         try:
@@ -94,8 +101,11 @@ class Command(BaseCommand):
                     continue
                 if dados["data_hora"].year != ano:
                     continue
+                if filtro_sat and dados["satelite"].upper() not in filtro_sat:
+                    continue
                 do_ano += 1
                 if contar:
+                    por_satelite[dados["satelite"] or "(vazio)"] += 1
                     continue
 
                 ponto = dados["localizacao"]
@@ -118,6 +128,9 @@ class Command(BaseCommand):
 
         if contar:
             mb = do_ano * 300 / 1_000_000  # ~300 bytes por foco com índices
+            self.stdout.write("Focos por satélite:")
+            for sat, n in por_satelite.most_common():
+                self.stdout.write(f"  {sat:<20} {n:>10,}  (~{n * 300 / 1_000_000:,.0f} MB)")
             self.stdout.write(self.style.SUCCESS(
                 f"{do_ano:,} focos de {ano} no CSV (de {lidas:,} linhas; {invalidas:,} inválidas). "
                 f"Espaço estimado no banco: ~{mb:,.0f} MB."
