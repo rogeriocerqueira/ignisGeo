@@ -6,7 +6,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-dev-key-troque-em-producao")
 DEBUG = os.environ.get("DEBUG", "True") == "True"
-ALLOWED_HOSTS = ["*"]
+
+
+def _lista_env(nome, padrao=""):
+    """Lê uma variável de ambiente separada por vírgulas como lista."""
+    return [v.strip() for v in os.environ.get(nome, padrao).split(",") if v.strip()]
+
+
+ALLOWED_HOSTS = _lista_env("ALLOWED_HOSTS", "*")
+# O Render define esta variável automaticamente com o domínio do serviço
+RENDER_EXTERNAL_HOSTNAME = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
+if RENDER_EXTERNAL_HOSTNAME and "*" not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -28,6 +39,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -54,13 +66,30 @@ CELERY_BROKER_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
+# Em produção sem worker/Redis (ex.: plano grátis do Render), as tasks rodam
+# de forma síncrona dentro do próprio processo web.
+CELERY_TASK_ALWAYS_EAGER = os.environ.get("CELERY_TASK_ALWAYS_EAGER", "False") == "True"
+CELERY_TASK_EAGER_PROPAGATES = True
 
 # CORS — permite o frontend Vue acessar a API
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    # Domínios do frontend em produção, ex.: https://ignisgeo.vercel.app
+    *_lista_env("CORS_ALLOWED_ORIGINS"),
 ]
+# Permite também os deploys de preview do Vercel (ex.: ignisgeo-git-xyz.vercel.app)
+CORS_ALLOWED_ORIGIN_REGEXES = _lista_env("CORS_ALLOWED_ORIGIN_REGEXES")
+CSRF_TRUSTED_ORIGINS = _lista_env("CSRF_TRUSTED_ORIGINS")
+if RENDER_EXTERNAL_HOSTNAME:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
+
+# Atrás do proxy HTTPS do Render
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Upload de CSV do INPE pela API: acima de 5 MB o arquivo vai para disco temporário
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": [
@@ -78,6 +107,11 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 TEMPLATES = [
