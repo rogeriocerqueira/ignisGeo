@@ -1,0 +1,42 @@
+# Blueprint do Render — cria a API Django (Docker) e o banco PostgreSQL.
+# No Render: New + → Blueprint → selecione este repositório.
+databases:
+  - name: ignisgeo-db
+    plan: free            # grátis por 30 dias; depois é preciso migrar para um plano pago
+    region: virginia      # região mais próxima do Brasil disponível no Render
+    databaseName: queimadas
+    user: queimadas_user
+    postgresMajorVersion: "16"
+
+services:
+  - type: web
+    name: ignisgeo-api
+    runtime: docker
+    plan: free
+    region: virginia
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/estatisticas/
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ignisgeo-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+      # Sem worker/Redis no plano grátis: tasks do Celery rodam no próprio processo web
+      - key: CELERY_TASK_ALWAYS_EAGER
+        value: "True"
+      # Preencha no painel depois do deploy do front, ex.: https://ignisgeo.vercel.app
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      # Aceita os previews do Vercel; ajuste o prefixo para o nome do seu projeto
+      - key: CORS_ALLOWED_ORIGIN_REGEXES
+        value: '^https://ignisgeo.*\.vercel\.app$'
+      - key: WEB_CONCURRENCY
+        value: "2"

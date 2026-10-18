@@ -19,3 +19,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 EXPOSE 8000
+
+# Produção (Render): migra, coleta estáticos e sobe o Gunicorn na porta $PORT.
+# No docker-compose local o "command: runserver" sobrescreve este CMD.
+CMD ["sh", "start.sh"]

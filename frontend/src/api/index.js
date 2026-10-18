@@ -1,8 +1,17 @@
 import axios from "axios";
 
+// Em produção (Vercel) defina VITE_API_URL com a URL do backend no Render,
+// ex.: https://ignisgeo-api.onrender.com. Em desenvolvimento é ignorada e o
+// proxy do Vite encaminha /api para o Django (no docker-compose VITE_API_URL
+// aponta para http://backend:8000, que só existe dentro da rede do Docker).
+const API_URL = import.meta.env.PROD
+  ? (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "")
+  : "";
+
 const api = axios.create({
-  baseURL: "/api",
-  timeout: 30000,
+  baseURL: `${API_URL}/api`,
+  // 60s: no plano grátis o Render "dorme" e a primeira requisição demora
+  timeout: 60000,
   headers: { "Content-Type": "application/json" },
 });
 
@@ -33,6 +42,16 @@ export const analiseApi = {
 
   importarCSV(caminho) {
     return api.post("/importar-csv/", { caminho });
+  },
+
+  // Envia um CSV do INPE a partir do navegador (funciona em produção)
+  enviarCSV(arquivo) {
+    const form = new FormData();
+    form.append("arquivo", arquivo);
+    return api.post("/importar-csv/", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+      timeout: 0,
+    });
   },
 
   getEstatisticas(params = {}) {
