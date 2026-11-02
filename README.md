@@ -54,7 +54,7 @@ Diagrama no estilo **C4 Container** mostrando os cinco containers internos do si
 
 Os três fluxos principais de comunicação em tempo de execução: importação assíncrona dos dados do INPE via Celery, execução do TOPSIS Fuzzy e visualização dos resultados em GeoJSON pelo Leaflet.
 
-![Diagrama de Sequência : IgnisGeo](diagrama-sequencia-queimadas.svg)
+![Diagrama de Sequência : IgnisGeo](docs/diagrama-sequencia-queimadas.svg)
 
 > Os dois diagramas são complementares: o de componentes documenta a **estrutura estática** do sistema; o de sequência documenta o **comportamento dinâmico** em cada fluxo de uso.
 
