@@ -48,7 +48,7 @@ Score  < 0.35 →  Baixo
 
 Diagrama no estilo **C4 Container** mostrando os cinco containers internos do sistema, os dois atores externos e os relacionamentos entre eles.
 
-![Diagrama de Componentes C4 : IgnisGeo](diagrama-componentes-c4.svg)
+![Diagrama de Componentes C4 : IgnisGeo](docs/diagrama-componentes-c4.svg)
 
 ### Visão de sequência : o que acontece e quando
 
