@@ -152,45 +152,6 @@ curl -X POST http://localhost:8000/api/calcular-topsis/ \
 
 As duas tabelas geradas pelo Django no PostgreSQL + PostGIS. Não há chave estrangeira direta entre elas : `queimadas_arearisco` é populada pelo algoritmo TOPSIS Fuzzy que agrega os dados de `queimadas_focoqueimada` por município/bioma.
 
-```mermaid
-erDiagram
-
-    queimadas_focoqueimada {
-        bigint      id                  PK  "AUTO gerado"
-        geometry    localizacao             "PointField · SRID 4326 WGS84"
-        timestamp   data_hora           IDX "WITH TIME ZONE"
-        varchar100  municipio
-        varchar2    estado              IDX
-        varchar20   bioma               IDX "AMAZONIA | CERRADO | CAATINGA | MATA_ATLANTICA | PANTANAL | PAMPA"
-        float8      frp                     "Fire Radiative Power em MW"
-        float8      risco_historico         "0.0 a 1.0 · DEFAULT 0.0"
-        float8      vento_ms                "NULLABLE · m/s"
-        float8      ndvi                    "NULLABLE · -1 a 1"
-        varchar50   satelite                "BLANK"
-        timestamp   criado_em               "AUTO NOW ADD"
-    }
-
-    queimadas_arearisco {
-        bigint      id                  PK  "AUTO gerado"
-        varchar200  nome
-        varchar2    estado
-        varchar20   bioma
-        geometry    geometria               "MultiPolygonField · SRID 4326 WGS84"
-        float8      score_topsis            "0.0 a 1.0 · resultado TOPSIS Fuzzy"
-        integer     ranking                 "Posição no ranking geral"
-        varchar10   nivel_risco             "CRITICO | ALTO | MEDIO | BAIXO"
-        integer     total_focos             "DEFAULT 0"
-        float8      frp_media               "DEFAULT 0.0"
-        float8      risco_historico_medio   "DEFAULT 0.0"
-        float8      vento_medio             "DEFAULT 0.0"
-        float8      ndvi_medio              "DEFAULT 0.0"
-        date        periodo_inicio
-        date        periodo_fim
-        timestamp   atualizado_em           "AUTO NOW"
-    }
-
-    queimadas_focoqueimada }o--o{ queimadas_arearisco : "agrega para calcular"
-```
 
 > Para visualizar localmente com mais detalhes, abra [`erd.html`](erd.html) no navegador.
 
