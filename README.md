@@ -48,13 +48,13 @@ Score  < 0.35 →  Baixo
 
 Diagrama no estilo **C4 Container** mostrando os cinco containers internos do sistema, os dois atores externos e os relacionamentos entre eles.
 
-![Diagrama de Componentes C4 : IgnisGeo](docs/diagrama-componentes-c4.svg)
+![Diagrama de Componentes C4 : IgnisGeo](docs/ignisgeo_arquitetura_completa.svg)
 
 ### Visão de sequência : o que acontece e quando
 
 Os três fluxos principais de comunicação em tempo de execução: importação assíncrona dos dados do INPE via Celery, execução do TOPSIS Fuzzy e visualização dos resultados em GeoJSON pelo Leaflet.
 
-![Diagrama de Sequência : IgnisGeo](docs/diagrama-sequencia-queimadas.svg)
+![Diagrama de Sequência : IgnisGeo](docs/diagrama-sequencia-ignisGeo-v2.svg)
 
 > Os dois diagramas são complementares: o de componentes documenta a **estrutura estática** do sistema; o de sequência documenta o **comportamento dinâmico** em cada fluxo de uso.
 
